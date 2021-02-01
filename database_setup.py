@@ -17,12 +17,20 @@ from sqlalchemy import create_engine
 Base = declarative_base()
 
 # здесь добавим классы
+class Year(Base):
+    __tablename__ = 'year'
+
+    id = Column(Integer, primary_key=True)
+    year = Column(Integer, nullable=False)
+
 class Area(Base):
     __tablename__ = 'area'
 
     id = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
-    year = Column(Integer, nullable=False)
+    year_id = Column(Integer, ForeignKey('year.id'))
+    year = relationship("Year", backref = "areas")
+
 
 
 class Institute(Base):

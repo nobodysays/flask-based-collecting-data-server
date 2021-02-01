@@ -17,13 +17,15 @@ def my_default(obj):
     if isinstance(obj, Area):
         return {
             "id": obj.id,
-            "name": obj.name
+            "name": obj.name,
+            "institutes" : obj.institutes
         }
     if isinstance(obj, Institute):
         return {
             "id": obj.id,
             "name": obj.name,
             "area_id": obj.area_id,
+            "indicators" : obj.indicators
         }
     if isinstance(obj, Indicator):
         return {
@@ -31,6 +33,14 @@ def my_default(obj):
             "indicator": obj.indicator,
             "value": obj.value,
             "institute_id": obj.institute_id,
+
+        }
+    if isinstance(obj, Year):
+        return {
+            "id": obj.id,
+            "year": obj.year,
+            "areas": obj.areas,
+
         }
 
 
@@ -80,6 +90,10 @@ def new_indicator_and_value():
 
     return json.dumps(session.query(Indicator).all(), ensure_ascii=False, default=my_default)
 
+@app.route('/api/years', methods=['GET'])
+def get_years():
+    return json.dumps(session.query(Year).all(), ensure_ascii=False, default=my_default)
+
 @app.route('/api/institutes', methods=['GET'])
 def get_institutes():
     return json.dumps(session.query(Institute).all(), ensure_ascii=False, default=my_default)
@@ -95,6 +109,17 @@ def get_indicators():
 @app.route('/api/year/new', methods=['POST'])
 def new_year():
     data = request.get_json()
+    is_year_exists = session.query(exists().where(Year.year == data['year'])).scalar()
+
+    current_year = None
+
+    if (not is_year_exists):
+        current_year = Year(year=data['year'])
+
+    else:
+        current_year = session.query(Year).filter_by(year=data['year']).one()
+
+    areas_array = []
     areas = data['areas']
     for area in areas:
         is_area_exists = session.query(exists().where(Area.name == area['name'])).scalar()
@@ -102,8 +127,8 @@ def new_year():
         current_area = None
 
         if(not is_area_exists):
-            current_area = Area(name=area['name'], year = area['year'])
-
+            current_area = Area(name=area['name'])
+            areas_array.append(current_area)
         else:
             current_area =session.query(Area).filter_by(name=area['name']).one()
 
@@ -136,8 +161,9 @@ def new_year():
             current_institute.indicators += indicators_array
 
         current_area.institutes += institutes_array
-        session.add(current_area)
 
+    current_year.areas += areas_array
+    session.add(current_year)
     session.commit()
 
     return {'indicators': json.dumps(session.query(Indicator).all(), ensure_ascii=False, default=my_default),
