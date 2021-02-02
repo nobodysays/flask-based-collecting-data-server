@@ -92,21 +92,119 @@ def new_indicator_and_value():
 
     return json.dumps(session.query(Indicator).all(), ensure_ascii=False, default=my_default)
 
-@app.route('/api/years', methods=['GET'])
-def get_years():
-    return json.dumps(session.query(Year).all(), ensure_ascii=False, default=my_default)
 
 @app.route('/api/institutes', methods=['GET'])
 def get_institutes():
     return json.dumps(session.query(Institute).all(), ensure_ascii=False, default=my_default)
 
-@app.route('/api/areas', methods=['GET'])
+@app.route('/areas', methods=['GET'])
 def get_areas():
-    return json.dumps(session.query(Area).all(), ensure_ascii=False, default=my_default)
+    areas = session.query(Area).all()
+    return render_template("areas.html", areas = areas)
+
+@app.route('/', methods=['GET'])
+def get_years():
+    years = session.query(Year).all()
+    return render_template("years.html", years = years)
+
+@app.route('/year/<int:year_id>', methods=['GET'])
+def get_year(year_id):
+    areas = session.query(Area).filter_by(year_id = year_id).all()
+    year =  session.query(Year).filter_by(id = year_id).one()
+    return render_template("areas.html", areas = areas, year = year.year)
+
+@app.route('/year/areas/<int:area_id>', methods=['GET'])
+def get_area(area_id):
+    institutes = session.query(Institute).filter_by(area_id = area_id).all()
+    area = session.query(Area).filter_by(id = area_id).one()
+    return render_template("area.html", institutes = institutes, name=area.name)
+
+
+@app.route('/year/areas/institute/<int:institute_id>', methods=['GET'])
+def get_institute(institute_id):
+    institute = session.query(Institute).filter_by(id = institute_id).one()
+    return render_template("institute.html", institute = institute)
+
 
 @app.route('/api/indicators', methods=['GET'])
 def get_indicators():
     return json.dumps(session.query(Indicator).all(), ensure_ascii=False, default=my_default)
+
+
+@app.route('/api/year/upload', methods=['POST'])
+def new_year_file():
+    data = json.loads(request.files['json_data'].read())
+    is_year_exists = session.query(exists().where(Year.year == data['year'])).scalar()
+
+    current_year = None
+
+    if (not is_year_exists):
+        current_year = Year(year=data['year'])
+
+    else:
+        current_year = session.query(Year).filter_by(year=data['year']).one()
+
+    areas_array = []
+    areas = data['areas']
+    for area in areas:
+        is_area_exists = session.query(exists().where(Area.name == area['name'])).scalar()
+
+        current_area = None
+
+        if (not is_area_exists):
+            current_area = Area(name=area['name'])
+            areas_array.append(current_area)
+        else:
+            current_area = session.query(Area).filter_by(name=area['name']).one()
+
+        institutes_array = []
+        institutes = area['institutes']
+        for institute in institutes:
+            is_institute_exists = session.query(exists().where(Institute.name == institute['name'])).scalar()
+
+            current_institute = None
+            if (not is_institute_exists):
+                current_institute = Institute(name=institute['name'])
+                institutes_array.append(current_institute)
+            else:
+                current_institute = session.query(Institute).filter_by(name=institute['name']).one()
+
+            indicators_array = []
+            directions_array = []
+            indicators = institute['indicators']
+            directions = institute['directions']
+            for indicator in indicators:
+                is_indicator_exists = session.query(
+                    exists().where(Indicator.indicator == indicator['indicator'])).scalar()
+
+                current_indicator = None
+                if (not is_indicator_exists):
+                    current_indicator = Indicator(indicator=indicator["indicator"], value=indicator['value'])
+                    indicators_array.append(current_indicator)
+                else:
+                    current_indicator = session.query(Indicator).filter_by(indicator=indicator['indicator']).one()
+
+            for direction in directions:
+                is_direction_exists = session.query(
+                    exists().where(Direction.direction == direction['direction'])).scalar()
+
+                current_direction = None
+                if (not is_direction_exists):
+                    current_direction = Direction(direction=direction["direction"])
+                    directions_array.append(current_direction)
+                else:
+                    current_direction = session.query(Direction).filter_by(direction=direction['direction']).one()
+
+            current_institute.indicators += indicators_array
+            current_institute.directions += directions_array
+
+        current_area.institutes += institutes_array
+
+    current_year.areas += areas_array
+    session.add(current_year)
+    session.commit()
+
+    return {'status': "ok"}
 
 @app.route('/api/year/new', methods=['POST'])
 def new_year():
@@ -216,7 +314,9 @@ def fromfile():
                 current_institute = session.query(Institute).filter_by(name=institute['name']).one()
 
             indicators_array = []
+            directions_array = []
             indicators = institute['indicators']
+            directions = institute['directions']
             for indicator in indicators:
                 is_indicator_exists = session.query(exists().where(Indicator.indicator == indicator['indicator'])).scalar()
 
@@ -227,9 +327,20 @@ def fromfile():
                 else:
                     current_indicator = session.query(Indicator).filter_by(indicator=indicator['indicator']).one()
 
+            for direction in directions:
+                is_direction_exists = session.query(exists().where(Direction.direction == direction['direction'])).scalar()
+
+                current_direction = None
+                if (not is_direction_exists):
+                    current_direction = Direction(direction=direction["direction"])
+                    directions_array.append(current_direction)
+                else:
+                    current_direction = session.query(Direction).filter_by(direction=direction['direction']).one()
+
 
 
             current_institute.indicators += indicators_array
+            current_institute.directions += directions_array
 
         current_area.institutes += institutes_array
 
@@ -239,26 +350,7 @@ def fromfile():
 
     return {'status':"ok"}
 
-@app.route('/api/test/new', methods=['POST'])
-def post_test():
-    area = Area(name="Белгородская область")
-    indicators = [
-        Indicator(indicator="показатель 1", value="занчение 1"),
-        Indicator(indicator="показатель 2", value="занчение 2"),
-        Indicator(indicator="показатель 3", value="занчение 3"),
-        Indicator(indicator="показатель 4", value="занчение 4")
-    ]
-    institutes = Institute(name='Автономная некоммерческая организация высшего образования "Белгородский университет кооперации, экономики и права"')
 
-
-    institutes.indicators = indicators
-    area.institutes = [institutes]
-
-    session.add(area)
-    session.commit()
-    return dict(indicators=json.dumps(session.query(Indicator).all(), ensure_ascii=False, default=my_default),
-                institutes=json.dumps(session.query(Institute).all(), ensure_ascii=False, default=my_default),
-                areas=json.dumps(session.query(Area).all(), ensure_ascii=False, default=my_default))
 
 
 if __name__ == '__main__':

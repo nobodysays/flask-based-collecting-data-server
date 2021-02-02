@@ -55,8 +55,9 @@ class Direction(Base):
     __tablename__ = 'direction'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(250), nullable=False)
-    institute_id = Column(Integer, nullable=False)
+    direction = Column(String(250), nullable=False)
+    institute_id = Column(Integer, ForeignKey('institute.id'))
+    institute = relationship("Institute", backref="directions")
 
 # создает экземпляр create_engine в конце файла
 engine = create_engine(conn_string)
