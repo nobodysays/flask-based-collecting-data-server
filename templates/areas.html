@@ -23,7 +23,7 @@
       <tbody>
         {% for area in areas %}
         <tr>
-          <th scope="row">{{area.id}}</th>
+          <th scope="row">{{loop.index}}</th>
           <td><a href="areas/{{area.id}}">{{area.name}}</a></td>
         </tr>
         {% endfor %}

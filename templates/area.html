@@ -23,7 +23,7 @@
       <tbody>
         {% for institute in institutes %}
         <tr>
-          <th scope="row">#</th>
+          <th scope="row">{{loop.index}}</th>
           <td><a href="institute/{{institute.id}}">{{institute.name}}</a></td>
         </tr>
         {% endfor %}

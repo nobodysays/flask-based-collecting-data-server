@@ -147,7 +147,7 @@ def new_year_file():
     areas_array = []
     areas = data['areas']
     for area in areas:
-        is_area_exists = session.query(exists().where(Area.name == area['name'])).scalar()
+        is_area_exists = session.query(exists().where(Area.year_id == current_year.id)).scalar()
 
         current_area = None
 
@@ -159,8 +159,9 @@ def new_year_file():
 
         institutes_array = []
         institutes = area['institutes']
+        print(f"area {current_area.name}")
         for institute in institutes:
-            is_institute_exists = session.query(exists().where(Institute.name == institute['name'])).scalar()
+            is_institute_exists = session.query(exists().where(Institute.area_id == current_area.id)).scalar()
 
             current_institute = None
             if (not is_institute_exists):
@@ -168,14 +169,14 @@ def new_year_file():
                 institutes_array.append(current_institute)
             else:
                 current_institute = session.query(Institute).filter_by(name=institute['name']).one()
-
+            print(f"inst {current_institute.name}")
             indicators_array = []
             directions_array = []
             indicators = institute['indicators']
             directions = institute['directions']
             for indicator in indicators:
                 is_indicator_exists = session.query(
-                    exists().where(Indicator.indicator == indicator['indicator'])).scalar()
+                    exists().where(Indicator.institute_id == current_institute.id)).scalar()
 
                 current_indicator = None
                 if (not is_indicator_exists):
@@ -184,9 +185,10 @@ def new_year_file():
                 else:
                     current_indicator = session.query(Indicator).filter_by(indicator=indicator['indicator']).one()
 
+
             for direction in directions:
                 is_direction_exists = session.query(
-                    exists().where(Direction.direction == direction['direction'])).scalar()
+                    exists().where(Direction.institute_id == current_institute.id)).scalar()
 
                 current_direction = None
                 if (not is_direction_exists):

@@ -16,6 +16,7 @@
     <table class="table">
       <thead>
         <tr>
+          <th scope="col">№</th>
           <th scope="col">Название показателя</th>
           <th scope="col">Значение показателя</th>
         </tr>
@@ -23,6 +24,7 @@
       <tbody>
         {% for indicator in institute.indicators %}
         <tr>
+          <th scope="row">{{loop.index}}</th>
           <td>{{indicator.indicator}}</td>
           <td>{{indicator.value}}</td>
         </tr>
@@ -33,12 +35,14 @@
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">Направления</th>
+          <th scope="col">№</th>
+          <th scope="col">Направление</th>
         </tr>
       </thead>
       <tbody>
         {% for direction in institute.directions %}
         <tr>
+          <th scope="row">{{loop.index}}</th>
           <td>{{direction.direction}}</td>
         </tr>
         {% endfor %}
