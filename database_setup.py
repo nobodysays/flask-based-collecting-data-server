@@ -27,7 +27,7 @@ class Area(Base):
     __tablename__ = 'area'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(250), nullable=False)
+    name = Column(String(500), nullable=False)
     year_id = Column(Integer, ForeignKey('year.id'))
     year = relationship("Year", backref = "areas")
 
@@ -38,7 +38,7 @@ class Institute(Base):
 
     id = Column(Integer, primary_key=True)
     area_id = Column(Integer, ForeignKey('area.id'))
-    name = Column(String(250), nullable=False)
+    name = Column(String(500), nullable=False)
     area = relationship("Area", backref = "institutes")
 
 
@@ -46,8 +46,8 @@ class Indicator(Base):
     __tablename__ = 'indicators'
 
     id = Column(Integer, primary_key=True)
-    indicator = Column(String(250), nullable=False)
-    value = Column(String(250), nullable=False)
+    indicator = Column(String(500), nullable=False)
+    value = Column(String(500), nullable=False)
     institute_id = Column(Integer, ForeignKey('institute.id'))
     institute = relationship("Institute", backref="indicators")
 

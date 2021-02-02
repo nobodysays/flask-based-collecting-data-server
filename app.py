@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, render_template, request, redirect, url_for, json, jsonify
 from sqlalchemy import create_engine, exists
 from sqlalchemy.orm import sessionmaker
@@ -171,6 +173,71 @@ def new_year():
             'areas': json.dumps(session.query(Area).all(), ensure_ascii=False, default=my_default)}
 
 
+@app.route('/api/year/fromfile', methods=['POST'])
+def fromfile():
+    path = os.path.join(os.getcwd(), "year2019.json")
+
+    file = open(path, "r", encoding="utf-8")
+    data = json.loads(file.read())
+    file.close()
+    is_year_exists = session.query(exists().where(Year.year == data['year'])).scalar()
+
+    current_year = None
+
+    if (not is_year_exists):
+        current_year = Year(year=data['year'])
+
+    else:
+        current_year = session.query(Year).filter_by(year=data['year']).one()
+
+    areas_array = []
+    areas = data['areas']
+    for area in areas:
+        is_area_exists = session.query(exists().where(Area.name == area['name'])).scalar()
+
+        current_area = None
+
+        if(not is_area_exists):
+            current_area = Area(name=area['name'])
+            areas_array.append(current_area)
+        else:
+            current_area =session.query(Area).filter_by(name=area['name']).one()
+
+        institutes_array = []
+        institutes = area['institutes']
+        for institute in institutes:
+            is_institute_exists = session.query(exists().where(Institute.name == institute['name'])).scalar()
+
+            current_institute = None
+            if (not is_institute_exists):
+                current_institute = Institute(name=institute['name'])
+                institutes_array.append(current_institute)
+            else:
+                current_institute = session.query(Institute).filter_by(name=institute['name']).one()
+
+            indicators_array = []
+            indicators = institute['indicators']
+            for indicator in indicators:
+                is_indicator_exists = session.query(exists().where(Indicator.indicator == indicator['indicator'])).scalar()
+
+                current_indicator = None
+                if (not is_indicator_exists):
+                    current_indicator = Indicator(indicator=indicator["indicator"], value=indicator['value'])
+                    indicators_array.append(current_indicator)
+                else:
+                    current_indicator = session.query(Indicator).filter_by(indicator=indicator['indicator']).one()
+
+
+
+            current_institute.indicators += indicators_array
+
+        current_area.institutes += institutes_array
+
+    current_year.areas += areas_array
+    session.add(current_year)
+    session.commit()
+
+    return {'status':"ok"}
 
 @app.route('/api/test/new', methods=['POST'])
 def post_test():
