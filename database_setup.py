@@ -17,6 +17,9 @@ class Year(Base):
     id = Column(Integer, primary_key=True)
     year = Column(Integer, nullable=False)
 
+    def __lt__(self, other):
+        return self.year < other.year
+
 
 class Area(Base):
     __tablename__ = 'area'

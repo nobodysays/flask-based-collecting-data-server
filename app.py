@@ -57,21 +57,21 @@ def get_areas():
 @app.route('/', methods=['GET'])
 def get_years():
     years = session.query(Year).all()
-    return render_template("years.html", years=years)
+    return render_template("years.html", years=sorted(years, key=lambda x: x.year, reverse=True))
 
 
 @app.route('/year/<int:year_id>', methods=['GET'])
 def get_year(year_id):
     areas = session.query(Area).filter_by(year_id=year_id).all()
     year = session.query(Year).filter_by(id=year_id).one()
-    return render_template("areas.html", areas=areas, year=year.year)
+    return render_template("areas.html", areas=sorted(areas, key=lambda x: x.name), year=year.year)
 
 
 @app.route('/year/areas/<int:area_id>', methods=['GET'])
 def get_area(area_id):
     institutes = session.query(Institute).filter_by(area_id=area_id).all()
     area = session.query(Area).filter_by(id=area_id).one()
-    return render_template("area.html", institutes=institutes, name=area.name)
+    return render_template("area.html", institutes=sorted(institutes, key=lambda x: x.name), name=area.name)
 
 
 @app.route('/year/areas/institute/<int:institute_id>', methods=['GET'])
@@ -85,20 +85,24 @@ def upload_year():
     data = json.loads(request.files['json_data'].read())
     return add_to_bd(data)
 
+
 @app.route('/api/year/upload/force', methods=['POST'])
 def upload_year_force():
     data = json.loads(request.files['json_data'].read())
     return add_to_bd_force(data)
+
 
 @app.route('/api/year/new', methods=['POST'])
 def new_year():
     data = request.get_json()
     return add_to_bd(data)
 
+
 @app.route('/api/year/new/force', methods=['POST'])
 def new_year_force():
     data = request.get_json()
     return add_to_bd_force(data)
+
 
 def add_to_bd_force(data):
     current_year = Year(year=data['year'])
@@ -138,9 +142,10 @@ def add_to_bd_force(data):
     session.commit()
 
     return "ok"
-#TODO: оптимизировать
+
+
 def add_to_bd(data):
-    current_year = session.query(Year).filter(Year.year==data['year']).all()
+    current_year = session.query(Year).filter(Year.year == data['year']).all()
     if len(current_year) == 0:
         current_year = Year(year=data['year'])
     else:
@@ -150,7 +155,10 @@ def add_to_bd(data):
     areas = data['areas']
     for area in areas:
 
-        current_area = session.query(Area).filter(and_(Area.name==area['name'], Area.year_id == current_year.id)).all()
+        current_area = session.query(Area)\
+            .filter(
+            and_(Area.name == area['name'], Area.year_id == current_year.id))\
+            .all()
 
         if len(current_area) == 0:
             current_area = Area(name=area['name'])
@@ -163,8 +171,11 @@ def add_to_bd(data):
         print(f"area {current_area.name}")
         for institute in institutes:
 
-            current_institute = session.query(Institute).filter(and_(Institute.name==institute['name'], Institute.area_id == current_area.id)).all()
-            if len(current_institute) ==0:
+            current_institute = session.query(Institute)\
+                .filter(
+                and_(Institute.name == institute['name'], Institute.area_id == current_area.id))\
+                .all()
+            if len(current_institute) == 0:
                 current_institute = Institute(name=institute['name'])
                 institutes_array.append(current_institute)
             else:
@@ -176,19 +187,23 @@ def add_to_bd(data):
             indicators = institute['indicators']
             directions = institute['directions']
             for indicator in indicators:
-                current_indicator = session.query(Indicator).filter(and_(Indicator.institute_id == current_institute.id, Indicator.indicator==indicator['indicator'])).all()
+                current_indicator = session.query(Indicator) \
+                    .filter(
+                    and_(Indicator.institute_id == current_institute.id, Indicator.indicator == indicator['indicator'])) \
+                    .all()
 
                 if len(current_indicator) == 0:
                     current_indicator = Indicator(indicator=indicator["indicator"], value=indicator['value'])
                     indicators_array.append(current_indicator)
 
-
             for direction in directions:
-                current_direction = session.query(Direction).filter(and_(Direction.institute_id == current_institute.id, Direction.direction == direction['direction'])).all()
+                current_direction = session.query(Direction) \
+                    .filter(
+                    and_(Direction.institute_id == current_institute.id, Direction.direction == direction['direction'])) \
+                    .all()
                 if len(current_direction) == 0:
                     current_direction = Direction(direction=direction["direction"])
                     directions_array.append(current_direction)
-
 
             current_institute.indicators += indicators_array
             current_institute.directions += directions_array
@@ -201,6 +216,7 @@ def add_to_bd(data):
     session.commit()
 
     return "ok"
+
 
 if __name__ == '__main__':
     app.debug = True
