@@ -104,6 +104,34 @@ def new_year_force():
     return add_to_bd_force(data)
 
 
+@app.route('/api/institute/<int:institute_id>/delete', methods=['POST'])
+def delete_institute(institute_id):
+    for direction in session.query(Direction).filter_by(institute_id=institute_id).all():
+        session.delete(direction)
+    for indicator in session.query(Indicator).filter_by(institute_id=institute_id).all():
+        session.delete(indicator)
+    session.delete(session.query(Institute).filter_by(id=institute_id).one())
+    session.commit()
+    return "ok"
+
+@app.route('/api/area/<int:area_id>/delete', methods=['POST', 'GET'])
+def delete_area(area_id):
+    for institute in session.query(Institute).filter_by(area_id=area_id).all():
+        delete_institute(institute.id)
+
+    session.delete(session.query(Area).filter_by(id=area_id).one())
+    session.commit()
+    return "ok"
+
+@app.route('/api/year/<int:year_id>/delete', methods=['POST', 'GET'])
+def delete_year(year_id):
+    for area in session.query(Area).filter_by(year_id=year_id).all():
+        delete_area(area.id)
+
+    session.delete(session.query(Year).filter_by(id=year_id).one())
+    session.commit()
+    return "ok"
+
 def add_to_bd_force(data):
     current_year = Year(year=data['year'])
     areas_array = list()
@@ -220,4 +248,4 @@ def add_to_bd(data):
 
 if __name__ == '__main__':
     app.debug = True
-    app.run(port=4996)
+    app.run()
