@@ -8,25 +8,23 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link rel="stylesheet" href="/static/styles/style.css" type="text/css">
-    <title>Области за {{year}}</title>
   </head>
   <body>
     <div class="content">
       <div class="content-item">
-      <a href="/summary/{{year}}">Общие сведения</a>
 
     <table class="table">
       <thead>
         <tr>
           <th scope="col">№</th>
-          <th scope="col">Название области</th>
+          <th scope="col">Код предмета</th>
         </tr>
       </thead>
       <tbody>
-        {% for area in areas %}
+        {% for subject in area.subjects %}
         <tr>
           <th scope="row">{{loop.index}}</th>
-          <td><a href="areas/{{area.id}}">{{area.name}}</a></td>
+          <td>{{subject.code}}</td>
         </tr>
         {% endfor %}
       </tbody>

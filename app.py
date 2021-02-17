@@ -80,6 +80,18 @@ def get_institute(institute_id):
     return render_template("institute.html", institute=institute)
 
 
+@app.route('/summary/<int:year>', methods=['GET', 'POST'])
+def get_summary_year(year):
+    year_id = session.query(Year).filter_by(year=year).one().id
+    areas = session.query(AreaSummary).filter_by(year_id=year_id)
+    return render_template("summary.html", areas=areas)
+
+@app.route('/summary/area/<int:area_id>', methods=['GET', 'POST'])
+def get_summary_area(area_id):
+    area = session.query(AreaSummary).filter_by(id=area_id).one()
+    return render_template("summary_area.html", area=area)
+
+
 @app.route('/api/year/upload', methods=['POST'])
 def upload_year():
     data = json.loads(request.files['json_data'].read())
