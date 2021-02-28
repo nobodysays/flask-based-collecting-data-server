@@ -64,7 +64,7 @@ def get_years():
 def get_year(year_id):
     areas = session.query(Area).filter_by(year_id=year_id).all()
     year = session.query(Year).filter_by(id=year_id).one()
-    return render_template("areas.html", areas=sorted(areas, key=lambda x: x.name), year=year.year)
+    return render_template("areas.html", areas=sorted(areas, key=lambda x: x.name), year=year)
 
 
 @app.route('/year/areas/<int:area_id>', methods=['GET'])
@@ -80,9 +80,8 @@ def get_institute(institute_id):
     return render_template("institute.html", institute=institute)
 
 
-@app.route('/summary/<int:year>', methods=['GET', 'POST'])
-def get_summary_year(year):
-    year_id = session.query(Year).filter_by(year=year).one().id
+@app.route('/summary/<int:year_id>', methods=['GET', 'POST'])
+def get_summary_year(year_id):
     areas = session.query(AreaSummary).filter_by(year_id=year_id)
     return render_template("summary.html", areas=areas)
 
@@ -148,6 +147,129 @@ def delete_year(year_id):
 
 
 def add_year_summary_to_bd_force(data):
+    current_year = Year(year=data['year'])
+    data_areas = data['areas']
+    areas = list()
+    for data_area in data_areas:
+        current_area = AreaSummary(name=data_area['name'])
+        print(f"area {data_area['name']}")
+        data_subjects = data_area['subjects']
+        data_bachelors = data_area['bachelor']
+        data_masters = data_area['magistracy']
+        data_specialists = data_area['spec']
+        subjects = list()
+        bachelors = list()
+        masters = list()
+        specialists = list()
+        for data_subject in data_subjects:
+            print(f"sub {data_subject['code']}")
+            current_subject = Subject(code=data_subject['code'])
+            current_p211 = P211()
+            data_current_p211 = data_subject['p211']
+            current_p211.budget_amount = data_current_p211['budget_amount']
+            current_p211.contract_amount = data_current_p211['contract_amount']
+            current_p211.total_fed_amount = data_current_p211['total_fed_amount']
+            current_p211.gr_contract_amount = data_current_p211['gr_contract_amount']
+            current_p211.women_amount = data_current_p211['women_amount']
+
+            current_p2124 = P2124()
+            data_current_p2124 = data_subject['p2124']
+            current_p2124.contract_amount = data_current_p2124['contract_amount']
+            current_p2124.total_fed_amount = data_current_p2124['total_fed_amount']
+            current_p2124.women_amount = data_current_p2124['women_amount']
+
+            current_p213 = P213()
+            data_current_p213 = data_subject['p213']
+            current_p213.total_grad_amount = data_current_p213['total_grad_amount']
+            current_p213.magistracy_amount = data_current_p213['magistracy_amount']
+            current_p213.total_fed_amount = data_current_p213['total_fed_amount']
+            current_p213.contract_amount = data_current_p213['contract_amount']
+            current_p213.women_amount = data_current_p213['women_amount']
+
+            current_subject.P211 = [current_p211]
+            current_subject.P2124 = [current_p2124]
+            current_subject.P213 = [current_p213]
+
+            subjects.append(current_subject)
+
+        for data_bachelor in data_bachelors:
+            current_bachelor = PostgraduateBachelor()
+            current_bachelor.country = data_bachelor['country']
+            current_bachelor.row_number = data_bachelor['row_number']
+            current_bachelor.code = data_bachelor['code']
+            current_bachelor.accepted_students_amount = data_bachelor['accepted_students_amount']
+            current_bachelor.a_fed_budget = data_bachelor['a_fed_budget']
+            current_bachelor.a_rf_budget = data_bachelor['a_rf_budget']
+            current_bachelor.a_local_budget = data_bachelor['a_local_budget']
+            current_bachelor.a_contract_amount = data_bachelor['a_contract_amount']
+            current_bachelor.total_students_amount = data_bachelor['total_students_amount']
+            current_bachelor.t_fed_budget = data_bachelor['t_fed_budget']
+            current_bachelor.t_rf_budget = data_bachelor['t_rf_budget']
+            current_bachelor.t_local_budget = data_bachelor['t_local_budget']
+            current_bachelor.t_contract_amount = data_bachelor['t_contract_amount']
+            current_bachelor.grad_students_amount = data_bachelor['grad_students_amount']
+            current_bachelor.g_fed_budget = data_bachelor['g_fed_budget']
+            current_bachelor.g_rf_budget = data_bachelor['g_rf_budget']
+            current_bachelor.g_local_budget = data_bachelor['g_local_budget']
+            current_bachelor.g_contract_amount = data_bachelor['g_contract_amount']
+            bachelors.append(current_bachelor)
+
+        for data_master in data_masters:
+            current_master = PostgraduateMaster()
+            current_master.country = data_master['country']
+            current_master.row_number = data_master['row_number']
+            current_master.code = data_master['code']
+            current_master.accepted_students_amount = data_master['accepted_students_amount']
+            current_master.a_fed_budget = data_master['a_fed_budget']
+            current_master.a_rf_budget = data_master['a_rf_budget']
+            current_master.a_local_budget = data_master['a_local_budget']
+            current_master.a_contract_amount = data_master['a_contract_amount']
+            current_master.total_students_amount = data_master['total_students_amount']
+            current_master.t_fed_budget = data_master['t_fed_budget']
+            current_master.t_rf_budget = data_master['t_rf_budget']
+            current_master.t_local_budget = data_master['t_local_budget']
+            current_master.t_contract_amount = data_master['t_contract_amount']
+            current_master.grad_students_amount = data_master['grad_students_amount']
+            current_master.g_fed_budget = data_master['g_fed_budget']
+            current_master.g_rf_budget = data_master['g_rf_budget']
+            current_master.g_local_budget = data_master['g_local_budget']
+            current_master.g_contract_amount = data_master['g_contract_amount']
+            masters.append(current_master)
+
+        for data_specialist in data_specialists:
+            current_specialist = PostgraduateSpecialty()
+            current_specialist.country = data_specialist['country']
+            current_specialist.row_number = data_specialist['row_number']
+            current_specialist.code = data_specialist['code']
+            current_specialist.accepted_students_amount = data_specialist['accepted_students_amount']
+            current_specialist.a_fed_budget = data_specialist['a_fed_budget']
+            current_specialist.a_rf_budget = data_specialist['a_rf_budget']
+            current_specialist.a_local_budget = data_specialist['a_local_budget']
+            current_specialist.a_contract_amount = data_specialist['a_contract_amount']
+            current_specialist.total_students_amount = data_specialist['total_students_amount']
+            current_specialist.t_fed_budget = data_specialist['t_fed_budget']
+            current_specialist.t_rf_budget = data_specialist['t_rf_budget']
+            current_specialist.t_local_budget = data_specialist['t_local_budget']
+            current_specialist.t_contract_amount = data_specialist['t_contract_amount']
+            current_specialist.grad_students_amount = data_specialist['grad_students_amount']
+            current_specialist.g_fed_budget = data_specialist['g_fed_budget']
+            current_specialist.g_rf_budget = data_specialist['g_rf_budget']
+            current_specialist.g_local_budget = data_specialist['g_local_budget']
+            current_specialist.g_contract_amount = data_specialist['g_contract_amount']
+            specialists.append(current_specialist)
+
+        current_area.subjects += subjects
+        current_area.postgraduate_bachelors += bachelors
+        current_area.postgraduate_masters += masters
+        current_area.postgraduate_specialists += specialists
+        areas.append(current_area)
+    current_year.areas_summary += areas
+    print("commiting to db")
+    session.add(current_year)
+    session.commit()
+    return "ok"
+
+def add_year_summary_to_bd(data):
     current_year = Year(year=data['year'])
     data_areas = data['areas']
     areas = list()
@@ -270,11 +392,15 @@ def add_year_summary_to_bd_force(data):
     session.commit()
     return "ok"
 
-
 @app.route('/api/yearsummary/upload/force', methods=['POST', 'GET'])
-def new_yearsummary():
+def new_yearsummary_force():
     data = json.loads(request.files['json_data'].read())
     return add_year_summary_to_bd_force(data)
+
+@app.route('/api/yearsummary/upload/', methods=['POST', 'GET'])
+def new_yearsummary():
+    data = json.loads(request.files['json_data'].read())
+    return add_year_summary_to_bd(data)
 
 
 def add_to_bd_force(data):
@@ -391,6 +517,9 @@ def add_to_bd(data):
     return "ok"
 
 
+
+
 if __name__ == '__main__':
     app.debug = True
     app.run()
+2

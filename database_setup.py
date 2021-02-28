@@ -68,15 +68,16 @@ class AreaSummary(Base):
 
 class Subject(Base):
     __tablename__ = 'subject'
+    id = Column(Integer, primary_key=True)
     area_id = Column(Integer, ForeignKey('area_sum.id'))
-    code = Column(String(500), primary_key=True)
+    code = Column(String(500), nullable=False)
 
     area_summary = relationship("AreaSummary", backref="subjects")
 
 class P211(Base):
     __tablename__ = 'p211'
     id = Column(Integer, primary_key=True)
-    subject_code = Column(String(500), ForeignKey('subject.code'))
+    subject_id = Column(Integer, ForeignKey('subject.id'))
     budget_amount = Column(Integer, nullable=True)
     contract_amount = Column(Integer, nullable=True)
     total_fed_amount = Column(Integer, nullable=True)
@@ -88,22 +89,20 @@ class P211(Base):
 class P2124(Base):
     __tablename__ = 'p2124'
     id = Column(Integer, primary_key=True)
-    subject_code = Column(String(500), ForeignKey('subject.code'))
-    budget_amount = Column(Integer, nullable=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
     contract_amount = Column(Integer, nullable=True)
     total_fed_amount = Column(Integer, nullable=True)
-    gr_contract_amount = Column(Integer, nullable=True)
     women_amount = Column(Integer, nullable=True)
     subject = relationship("Subject", backref="P2124")
 
 class P213(Base):
     __tablename__ = 'p213'
     id = Column(Integer, primary_key=True)
-    subject_code = Column(String(500), ForeignKey('subject.code'))
-    budget_amount = Column(Integer, nullable=True)
-    contract_amount = Column(Integer, nullable=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+    total_grad_amount = Column(Integer, nullable=True)
+    magistracy_amount = Column(Integer, nullable=True)
     total_fed_amount = Column(Integer, nullable=True)
-    gr_contract_amount = Column(Integer, nullable=True)
+    contract_amount = Column(Integer, nullable=True)
     women_amount = Column(Integer, nullable=True)
     subject = relationship("Subject", backref="P213")
 

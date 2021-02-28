@@ -15,9 +15,13 @@
 
     <table class="table">
       <thead>
+
         <tr>
           <th scope="col">№</th>
           <th scope="col">Код предмета</th>
+          <th scope="col">Женщин p211</th>
+          <th scope="col">Женщин p2124</th>
+          <th scope="col">Женщин p213</th>
         </tr>
       </thead>
       <tbody>
@@ -25,6 +29,64 @@
         <tr>
           <th scope="row">{{loop.index}}</th>
           <td>{{subject.code}}</td>
+          <td>{{subject.P211[0].women_amount}}</td>
+          <td>{{subject.P2124[0].women_amount}}</td>
+          <td>{{subject.P213[0].women_amount}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+
+    </table>
+
+
+        <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">№</th>
+          <th scope="col">Страна</th>
+          <th scope="col">Код</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bachelor in area.postgraduate_bachelors %}
+        <tr>
+          <th scope="row">{{loop.index}}</th>
+          <td>{{bachelor.country}}</td>
+          <td>{{bachelor.code}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+
+        <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">№</th>
+          <th scope="col">Страна</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for master in area.postgraduate_masters %}
+        <tr>
+          <th scope="row">{{loop.index}}</th>
+          <td>{{master.country}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">№</th>
+          <th scope="col">Страна</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for specialist in area.postgraduate_specialists %}
+        <tr>
+          <th scope="row">{{loop.index}}</th>
+          <td>{{specialist.country}}</td>
         </tr>
         {% endfor %}
       </tbody>
