@@ -11,6 +11,7 @@
     <title>{{name}}</title>
   </head>
   <body>
+  <a href="general/{{area_id}}">Общие сведения</a>
     <div class="content">
       <div class="content-item">
     <table class="table">
@@ -24,7 +25,7 @@
         {% for institute in institutes %}
         <tr>
           <th scope="row">{{loop.index}}</th>
-          <td><a href="institute/{{institute.id}}">{{institute.name}}</a></td>
+          <td><a href="{{area_id}}/institute/{{institute.id}}">{{institute.institute_name.name}}</a></td>
         </tr>
         {% endfor %}
       </tbody>

@@ -54,28 +54,34 @@ def get_areas():
     return render_template("areas.html", areas=areas)
 
 
+@app.route('/year/<int:year>/areas/general/<int:area_id>', methods=['GET'])
+def get_area_summary(year, area_id):
+    area = session.query(Area).filter(and_(Area.id == area_id, Area.year == year)).one()
+    return render_template("summary_area.html", area=area)
+
 @app.route('/', methods=['GET'])
 def get_years():
-    years = session.query(Year).all()
-    return render_template("years.html", years=sorted(years, key=lambda x: x.year, reverse=True))
+    areas = session.query(Area).all()
+    years = set([area.year for area in areas])
+    return render_template("years.html", years=years)
 
 
-@app.route('/year/<int:year_id>', methods=['GET'])
-def get_year(year_id):
-    areas = session.query(Area).filter_by(year_id=year_id).all()
-    year = session.query(Year).filter_by(id=year_id).one()
-    return render_template("areas.html", areas=sorted(areas, key=lambda x: x.name), year=year)
+@app.route('/year/<int:year>', methods=['GET'])
+def get_year(year):
+    areas = session.query(Area).filter_by(year=year).all()
+    areas_name = []
+    return render_template("areas.html", areas=areas, year=year)
 
 
-@app.route('/year/areas/<int:area_id>', methods=['GET'])
-def get_area(area_id):
+@app.route('/year/<int:year>/areas/<int:area_id>', methods=['GET'])
+def get_area(year, area_id):
     institutes = session.query(Institute).filter_by(area_id=area_id).all()
-    area = session.query(Area).filter_by(id=area_id).one()
-    return render_template("area.html", institutes=sorted(institutes, key=lambda x: x.name), name=area.name)
+    area_name = session.query(Area).filter_by(id=area_id).one().area_name.name
+    return render_template("area.html", area_id=area_id, institutes=institutes, name=area_name)
 
 
-@app.route('/year/areas/institute/<int:institute_id>', methods=['GET'])
-def get_institute(institute_id):
+@app.route('/year/<int:year>/areas/<int:area_id>/institute/<int:institute_id>', methods=['GET'])
+def get_institute(year,area_id,institute_id):
     institute = session.query(Institute).filter_by(id=institute_id).one()
     return render_template("institute.html", institute=institute)
 
@@ -85,34 +91,17 @@ def get_summary_year(year_id):
     areas = session.query(AreaSummary).filter_by(year_id=year_id)
     return render_template("summary.html", areas=areas)
 
+
 @app.route('/summary/area/<int:area_id>', methods=['GET', 'POST'])
 def get_summary_area(area_id):
     area = session.query(AreaSummary).filter_by(id=area_id).one()
     return render_template("summary_area.html", area=area)
 
 
-@app.route('/api/year/upload', methods=['POST'])
-def upload_year():
-    data = json.loads(request.files['json_data'].read())
-    return add_to_bd(data)
 
 
-@app.route('/api/year/upload/force', methods=['POST'])
-def upload_year_force():
-    data = json.loads(request.files['json_data'].read())
-    return add_to_bd_force(data)
 
 
-@app.route('/api/year/new', methods=['POST'])
-def new_year():
-    data = request.get_json()
-    return add_to_bd(data)
-
-
-@app.route('/api/year/new/force', methods=['POST'])
-def new_year_force():
-    data = request.get_json()
-    return add_to_bd_force(data)
 
 
 @app.route('/api/institute/<int:institute_id>/delete', methods=['POST'])
@@ -146,24 +135,146 @@ def delete_year(year_id):
     return "ok"
 
 
-def add_year_summary_to_bd_force(data):
-    current_year = Year(year=data['year'])
-    data_areas = data['areas']
-    areas = list()
-    for data_area in data_areas:
-        current_area = AreaSummary(name=data_area['name'])
-        print(f"area {data_area['name']}")
-        data_subjects = data_area['subjects']
-        data_bachelors = data_area['bachelor']
-        data_masters = data_area['magistracy']
-        data_specialists = data_area['spec']
-        subjects = list()
-        bachelors = list()
-        masters = list()
-        specialists = list()
+
+
+@app.route('/api/yearsummary/upload/force', methods=['POST', 'GET'])
+def new_yearsummary_force():
+    data = json.loads(request.files['json_data'].read())
+    return add_year_summary_to_bd_force(data)
+
+
+#@app.route('/api/yearsummary/upload/', methods=['POST', 'GET'])
+#def new_yearsummary():
+#    data = json.loads(request.files['json_data'].read())
+#    return add_year_summary_to_bd(data)
+
+
+@app.route('/api/year/upload', methods=['POST', 'GET'])
+
+
+@app.route('/api/year/testupload', methods=['POST', 'GET'])
+def new_testyear():
+    json_data = json.loads(request.files['json_data'].read())
+    areas = session.query(AreaName).all()
+    institutes = session.query(InstituteName).all()
+
+    area_names = [area.name.upper() for area in areas]
+    institute_names = [institute.name.upper() for institute in institutes]
+    #доьавление новых названий областей и университетов
+    for area_data in json_data['areas']:
+        area_name = area_data['name'].upper()
+        if area_name not in area_names:
+            temp = AreaName(name=area_name)
+            session.add(temp)
+            area_names.append(temp)
+
+        for institute_data in area_data['institutes']:
+            institute_name = institute_data['name'].upper()
+            if institute_name not in institute_names:
+                temp = InstituteName(name=institute_name.upper())
+                session.add(temp)
+                institute_names.append(temp)
+    session.commit()
+    #извлекаем обновленные данные
+    institutes = session.query(InstituteName).all()
+    areas = session.query(AreaName).all()
+
+
+    for area_data in json_data['areas']:
+        area_name = area_data['name'].upper()
+        print(area_name)
+        area_name_id = find_element_by_name(areas, area_name).id
+        current_area = Area(area_name_id=area_name_id, year=json_data['year'])
+        for institute_data in area_data['institutes']:
+            institute_name = institute_data['name'].upper()
+            print(institute_name)
+            institute_name_id = find_element_by_name(institutes, institute_name).id
+            current_institute = Institute(institute_name_id=institute_name_id)
+            for indicator_data in institute_data['indicators']:
+                current_institute.indicators.append(Indicator(indicator = indicator_data['indicator'], value = indicator_data['value']))
+
+            for direction_data in institute_data["directions"]:
+                current_institute.directions.append(Direction(direction= direction_data['direction']))
+
+            current_area.institutes.append(current_institute)
+        session.add(current_area)
+    print("COMMINTING")
+    session.commit()
+    return "ok"
+
+
+@app.route('/api/year/summarytestupload', methods=['POST', 'GET'])
+def new_summarytestyear():
+    json_data = json.loads(request.files['json_data'].read())
+    area_names = [area.name.upper() for area in session.query(AreaName).all()]
+    country_codes = [country.code for country in session.query(Country).all()]
+    #добавляем страны
+    for area_data in json_data['areas']:
+        bachelor_data = area_data['bachelor']
+        spec_data = area_data['spec']
+        magistracy_data = area_data['magistracy']
+
+        for el in bachelor_data:
+            country_code = el['code']
+            if country_code not in country_codes:
+                session.add(Country(name=el['country'].upper(), code=country_code))
+                country_codes.append(country_code)
+
+        for el in spec_data:
+            country_code = el['code']
+            if country_code not in country_codes:
+                session.add(Country(name=el['country'].upper(), code=country_code))
+                country_codes.append(country_code)
+
+        for el in magistracy_data:
+            country_code = el['code']
+            if country_code not in country_codes:
+                session.add(Country(name=el['country'].upper(), code=country_code))
+                country_codes.append(country_code)
+
+    #добавляем области
+    for area in json_data['areas']:
+        area_name = area['name'].upper()
+        if area_name not in area_names:
+            session.add(AreaName(name=area_name))
+            area_names.append(area_name)
+
+    session.commit()
+    area_names= session.query(AreaName).all()
+    areas = session.query(Area).all()
+    countries = session.query(Country).all()
+
+    year = json_data['year']
+    for area in json_data['areas']:
+        area_name = area['name'].upper()
+        print(area_name)
+        area = None
+        found = False
+        for e in areas:
+            name = e.area_name.name
+            if name == area_name:
+                if (e.year == int(year)):
+                    area = e
+                    found = True
+                    break
+                else:
+                    area_name_id = find_element_by_name(area_names, area_name).id
+                    area = Area(year=year, area_name_id=area_name_id)
+                    found = True
+                    break
+
+
+        if not found:
+            area_name_id = find_element_by_name(area_names, area_name).id
+            area = Area(year = year, area_name_id = area_name_id)
+
+        data_subjects = area_data['subjects']
+        data_bachelors = area_data['bachelor']
+        data_masters = area_data['magistracy']
+        data_specialists = area_data['spec']
+
         for data_subject in data_subjects:
-            print(f"sub {data_subject['code']}")
-            current_subject = Subject(code=data_subject['code'])
+            current_subject = Subject(code=data_subject['code'], name = data_subject['name'])
             current_p211 = P211()
             data_current_p211 = data_subject['p211']
             current_p211.budget_amount = data_current_p211['budget_amount']
@@ -186,17 +297,21 @@ def add_year_summary_to_bd_force(data):
             current_p213.contract_amount = data_current_p213['contract_amount']
             current_p213.women_amount = data_current_p213['women_amount']
 
+
             current_subject.P211 = [current_p211]
             current_subject.P2124 = [current_p2124]
             current_subject.P213 = [current_p213]
 
-            subjects.append(current_subject)
+            area.subjects.append(current_subject)
 
         for data_bachelor in data_bachelors:
             current_bachelor = PostgraduateBachelor()
-            current_bachelor.country = data_bachelor['country']
+            code=data_bachelor['code']
+            for e in countries:
+                if e.code == code:
+                    current_bachelor.country_id = e.id
+
             current_bachelor.row_number = data_bachelor['row_number']
-            current_bachelor.code = data_bachelor['code']
             current_bachelor.accepted_students_amount = data_bachelor['accepted_students_amount']
             current_bachelor.a_fed_budget = data_bachelor['a_fed_budget']
             current_bachelor.a_rf_budget = data_bachelor['a_rf_budget']
@@ -212,13 +327,15 @@ def add_year_summary_to_bd_force(data):
             current_bachelor.g_rf_budget = data_bachelor['g_rf_budget']
             current_bachelor.g_local_budget = data_bachelor['g_local_budget']
             current_bachelor.g_contract_amount = data_bachelor['g_contract_amount']
-            bachelors.append(current_bachelor)
+            area.postgraduate_bachelors.append(current_bachelor)
 
         for data_master in data_masters:
             current_master = PostgraduateMaster()
-            current_master.country = data_master['country']
+            code = data_master['code']
+            for e in countries:
+                if e.code == code:
+                    current_master.country_id = e.id
             current_master.row_number = data_master['row_number']
-            current_master.code = data_master['code']
             current_master.accepted_students_amount = data_master['accepted_students_amount']
             current_master.a_fed_budget = data_master['a_fed_budget']
             current_master.a_rf_budget = data_master['a_rf_budget']
@@ -234,11 +351,14 @@ def add_year_summary_to_bd_force(data):
             current_master.g_rf_budget = data_master['g_rf_budget']
             current_master.g_local_budget = data_master['g_local_budget']
             current_master.g_contract_amount = data_master['g_contract_amount']
-            masters.append(current_master)
+            area.postgraduate_masters.append(current_master)
 
         for data_specialist in data_specialists:
             current_specialist = PostgraduateSpecialty()
-            current_specialist.country = data_specialist['country']
+            code = data_specialist['code']
+            for e in countries:
+                if e.code == code:
+                    current_specialist.country_id = e.id
             current_specialist.row_number = data_specialist['row_number']
             current_specialist.code = data_specialist['code']
             current_specialist.accepted_students_amount = data_specialist['accepted_students_amount']
@@ -256,265 +376,70 @@ def add_year_summary_to_bd_force(data):
             current_specialist.g_rf_budget = data_specialist['g_rf_budget']
             current_specialist.g_local_budget = data_specialist['g_local_budget']
             current_specialist.g_contract_amount = data_specialist['g_contract_amount']
-            specialists.append(current_specialist)
+            area.postgraduate_specialists.append(current_specialist)
 
-        current_area.subjects += subjects
-        current_area.postgraduate_bachelors += bachelors
-        current_area.postgraduate_masters += masters
-        current_area.postgraduate_specialists += specialists
-        areas.append(current_area)
-    current_year.areas_summary += areas
-    print("commiting to db")
-    session.add(current_year)
+        session.add(area)
+
     session.commit()
+
+
+
+
+
     return "ok"
+def new_year():
+    json_data = json.loads(request.files['json_data'].read())
 
-def add_year_summary_to_bd(data):
-    current_year = Year(year=data['year'])
-    data_areas = data['areas']
-    areas = list()
-    for data_area in data_areas:
-        current_area = AreaSummary(name=data_area['name'])
-        data_subjects = data_area['subjects']
-        data_bachelors = data_area['bachelor']
-        data_masters = data_area['magistracy']
-        data_specialists = data_area['spec']
-        subjects = list()
-        bachelors = list()
-        masters = list()
-        specialists = list()
-        for data_subject in data_subjects:
-            current_subject = Subject(code=data_subject['code'])
-            current_p211 = P211()
-            data_current_p211 = data_subject['p211']
-            current_p211.budget_amount = data_current_p211['budget_amount']
-            current_p211.contract_amount = data_current_p211['contract_amount']
-            current_p211.total_fed_amount = data_current_p211['total_fed_amount']
-            current_p211.gr_contract_amount = data_current_p211['gr_contract_amount']
-            current_p211.women_amount = data_current_p211['women_amount']
+    area_names = [area.name.upper() for area in session.query(AreaName).all()]
+    institute_names = [institute.name.upper() for institute in session.query(InstituteName).all()]
 
-            current_p2124 = P2124()
-            data_current_p2124 = data_subject['p2124']
-            current_p2124.budget_amount = data_current_p2124['budget_amount']
-            current_p2124.contract_amount = data_current_p2124['contract_amount']
-            current_p2124.total_fed_amount = data_current_p2124['total_fed_amount']
-            current_p2124.gr_contract_amount = data_current_p2124['gr_contract_amount']
-            current_p2124.women_amount = data_current_p2124['women_amount']
+    # добавляем новые названия областей и названия университетов
+    for area_data in json_data['areas']:
+        area_name = area_data['name'].upper()
+        if area_name not in area_names:
+            session.add(AreaName(name=area_name))
 
-            current_p213 = P213()
-            data_current_p213 = data_subject['p2124']
-            current_p213.budget_amount = data_current_p213['budget_amount']
-            current_p213.contract_amount = data_current_p213['contract_amount']
-            current_p213.total_fed_amount = data_current_p213['total_fed_amount']
-            current_p213.gr_contract_amount = data_current_p213['gr_contract_amount']
-            current_p213.women_amount = data_current_p213['women_amount']
-
-            current_subject.P211 = [current_p211]
-            current_subject.P2124 = [current_p2124]
-            current_subject.P213 = [current_p213]
-
-            subjects.append(current_subject)
-
-        for data_bachelor in data_bachelors:
-            current_bachelor = PostgraduateBachelor()
-            current_bachelor.country = data_bachelor['country']
-            current_bachelor.row_number = data_bachelor['row_number']
-            current_bachelor.code = data_bachelor['code']
-            current_bachelor.accepted_students_amount = data_bachelor['accepted_students_amount']
-            current_bachelor.a_fed_budget = data_bachelor['a_fed_budget']
-            current_bachelor.a_rf_budget = data_bachelor['a_rf_budget']
-            current_bachelor.a_local_budget = data_bachelor['a_local_budget']
-            current_bachelor.a_contract_amount = data_bachelor['a_contract_amount']
-            current_bachelor.total_students_amount = data_bachelor['total_students_amount']
-            current_bachelor.t_fed_budget = data_bachelor['t_fed_budget']
-            current_bachelor.t_rf_budget = data_bachelor['t_rf_budget']
-            current_bachelor.t_local_budget = data_bachelor['t_local_budget']
-            current_bachelor.t_contract_amount = data_bachelor['t_contract_amount']
-            current_bachelor.grad_students_amount = data_bachelor['grad_students_amount']
-            current_bachelor.g_fed_budget = data_bachelor['g_fed_budget']
-            current_bachelor.g_rf_budget = data_bachelor['g_rf_budget']
-            current_bachelor.g_local_budget = data_bachelor['g_local_budget']
-            current_bachelor.g_contract_amount = data_bachelor['g_contract_amount']
-            bachelors.append(current_bachelor)
-
-        for data_master in data_masters:
-            current_master = PostgraduateMaster()
-            current_master.country = data_master['country']
-            current_master.row_number = data_master['row_number']
-            current_master.code = data_master['code']
-            current_master.accepted_students_amount = data_master['accepted_students_amount']
-            current_master.a_fed_budget = data_master['a_fed_budget']
-            current_master.a_rf_budget = data_master['a_rf_budget']
-            current_master.a_local_budget = data_master['a_local_budget']
-            current_master.a_contract_amount = data_master['a_contract_amount']
-            current_master.total_students_amount = data_master['total_students_amount']
-            current_master.t_fed_budget = data_master['t_fed_budget']
-            current_master.t_rf_budget = data_master['t_rf_budget']
-            current_master.t_local_budget = data_master['t_local_budget']
-            current_master.t_contract_amount = data_master['t_contract_amount']
-            current_master.grad_students_amount = data_master['grad_students_amount']
-            current_master.g_fed_budget = data_master['g_fed_budget']
-            current_master.g_rf_budget = data_master['g_rf_budget']
-            current_master.g_local_budget = data_master['g_local_budget']
-            current_master.g_contract_amount = data_master['g_contract_amount']
-            masters.append(current_master)
-
-        for data_specialist in data_specialists:
-            current_specialist = PostgraduateSpecialty()
-            current_specialist.country = data_specialist['country']
-            current_specialist.row_number = data_specialist['row_number']
-            current_specialist.code = data_specialist['code']
-            current_specialist.accepted_students_amount = data_specialist['accepted_students_amount']
-            current_specialist.a_fed_budget = data_specialist['a_fed_budget']
-            current_specialist.a_rf_budget = data_specialist['a_rf_budget']
-            current_specialist.a_local_budget = data_specialist['a_local_budget']
-            current_specialist.a_contract_amount = data_specialist['a_contract_amount']
-            current_specialist.total_students_amount = data_specialist['total_students_amount']
-            current_specialist.t_fed_budget = data_specialist['t_fed_budget']
-            current_specialist.t_rf_budget = data_specialist['t_rf_budget']
-            current_specialist.t_local_budget = data_specialist['t_local_budget']
-            current_specialist.t_contract_amount = data_specialist['t_contract_amount']
-            current_specialist.grad_students_amount = data_specialist['grad_students_amount']
-            current_specialist.g_fed_budget = data_specialist['g_fed_budget']
-            current_specialist.g_rf_budget = data_specialist['g_rf_budget']
-            current_specialist.g_local_budget = data_specialist['g_local_budget']
-            current_specialist.g_contract_amount = data_specialist['g_contract_amount']
-            specialists.append(current_specialist)
-
-        current_area.subjects += subjects
-        current_area.postgraduate_bachelors += bachelors
-        current_area.postgraduate_masters += masters
-        current_area.postgraduate_specialists += specialists
-        areas.append(current_area)
-    current_year.areas_summary += areas
-    print("commiting to db")
-    session.add(current_year)
+        for institute_data in area_data['institutes']:
+            institute_name = institute_data['name'].upper()
+            if institute_name not in institute_names:
+                session.add(InstituteName(name=institute_name.upper()))
     session.commit()
-    return "ok"
+    area_names = session.query(AreaName).all()
+    institute_names = session.query(InstituteName).all()
 
-@app.route('/api/yearsummary/upload/force', methods=['POST', 'GET'])
-def new_yearsummary_force():
-    data = json.loads(request.files['json_data'].read())
-    return add_year_summary_to_bd_force(data)
+    for area_data in json_data['areas']:
+        area_name = area_data['name'].upper()
+        print(area_name)
+        area_name_id = find_element_by_name(area_names, area_name).id
+        current_area = Area(area_name_id=area_name_id, year=json_data['year'])
+        for institute_data in area_data['institutes']:
+            institute_name = institute_data['name'].upper()
+            print(institute_name)
+            institute_name_id = find_element_by_name(institute_names, institute_name).id
+            current_institute = Institute(institute_name_id=institute_name_id)
+            for indicator_data in institute_data['indicators']:
+                current_institute.indicators.append(Indicator(indicator = indicator_data['indicator'], value = indicator_data['value']))
 
-@app.route('/api/yearsummary/upload/', methods=['POST', 'GET'])
-def new_yearsummary():
-    data = json.loads(request.files['json_data'].read())
-    return add_year_summary_to_bd(data)
+            for direction_data in institute_data["directions"]:
+                current_institute.directions.append(Direction(direction= direction_data['direction']))
 
+            current_area.institutes.append(current_institute)
+        session.add(current_area)
 
-def add_to_bd_force(data):
-    current_year = Year(year=data['year'])
-    areas_array = list()
-    areas = data['areas']
-    for area in areas:
-        current_area = Area(name=area['name'])
-        areas_array.append(current_area)
-        institutes_array = list()
-        institutes = area['institutes']
-        print(f"area {current_area.name}")
-        for institute in institutes:
-
-            current_institute = Institute(name=institute['name'])
-            institutes_array.append(current_institute)
-            print(f"inst {current_institute.name}")
-            indicators_array = list()
-            directions_array = list()
-            indicators = institute['indicators']
-            directions = institute['directions']
-            for indicator in indicators:
-                current_indicator = Indicator(indicator=indicator["indicator"], value=indicator['value'])
-                indicators_array.append(current_indicator)
-
-            for direction in directions:
-                current_direction = Direction(direction=direction["direction"])
-                directions_array.append(current_direction)
-
-            current_institute.indicators += indicators_array
-            current_institute.directions += directions_array
-
-        current_area.institutes += institutes_array
-
-    current_year.areas += areas_array
-    print("commiting to db")
-    session.add(current_year)
+    print("commit")
     session.commit()
 
     return "ok"
 
 
-def add_to_bd(data):
-    current_year = session.query(Year).filter(Year.year == data['year']).all()
-    if len(current_year) == 0:
-        current_year = Year(year=data['year'])
-    else:
-        current_year = current_year[0]
 
-    areas_array = list()
-    areas = data['areas']
-    for area in areas:
 
-        current_area = session.query(Area) \
-            .filter(
-            and_(Area.name == area['name'], Area.year_id == current_year.id)) \
-            .all()
 
-        if len(current_area) == 0:
-            current_area = Area(name=area['name'])
-            areas_array.append(current_area)
-        else:
-            current_area = current_area[0]
-
-        institutes_array = list()
-        institutes = area['institutes']
-        print(f"area {current_area.name}")
-        for institute in institutes:
-
-            current_institute = session.query(Institute) \
-                .filter(
-                and_(Institute.name == institute['name'], Institute.area_id == current_area.id)) \
-                .all()
-            if len(current_institute) == 0:
-                current_institute = Institute(name=institute['name'])
-                institutes_array.append(current_institute)
-            else:
-                current_institute = current_institute[0]
-
-            print(f"inst {current_institute.name}")
-            indicators_array = list()
-            directions_array = list()
-            indicators = institute['indicators']
-            directions = institute['directions']
-            for indicator in indicators:
-                current_indicator = session.query(Indicator) \
-                    .filter(
-                    and_(Indicator.institute_id == current_institute.id, Indicator.indicator == indicator['indicator'])) \
-                    .all()
-
-                if len(current_indicator) == 0:
-                    current_indicator = Indicator(indicator=indicator["indicator"], value=indicator['value'])
-                    indicators_array.append(current_indicator)
-
-            for direction in directions:
-                current_direction = session.query(Direction) \
-                    .filter(
-                    and_(Direction.institute_id == current_institute.id, Direction.direction == direction['direction'])) \
-                    .all()
-                if len(current_direction) == 0:
-                    current_direction = Direction(direction=direction["direction"])
-                    directions_array.append(current_direction)
-
-            current_institute.indicators += indicators_array
-            current_institute.directions += directions_array
-
-        current_area.institutes += institutes_array
-
-    current_year.areas += areas_array
-
-    session.add(current_year)
-    session.commit()
-
-    return "ok"
+def find_element_by_name(array, target):
+    for el in array:
+        if el.name == target:
+            return array[array.index(el)]
+    return -1
 
 
 

@@ -51,7 +51,7 @@
         {% for bachelor in area.postgraduate_bachelors %}
         <tr>
           <th scope="row">{{loop.index}}</th>
-          <td>{{bachelor.country}}</td>
+          <td>{{bachelor.country_id}}</td>
           <td>{{bachelor.code}}</td>
         </tr>
         {% endfor %}
@@ -70,7 +70,7 @@
         {% for master in area.postgraduate_masters %}
         <tr>
           <th scope="row">{{loop.index}}</th>
-          <td>{{master.country}}</td>
+          <td>{{master.country_id}}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -86,7 +86,7 @@
         {% for specialist in area.postgraduate_specialists %}
         <tr>
           <th scope="row">{{loop.index}}</th>
-          <td>{{specialist.country}}</td>
+          <td>{{specialist.country_id}}</td>
         </tr>
         {% endfor %}
       </tbody>

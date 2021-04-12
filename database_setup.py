@@ -6,46 +6,58 @@ from sqlalchemy.orm import relationship
 
 from sqlalchemy import create_engine
 
-conn_string = "postgresql://postgres:root@localhost/t"
+conn_string = "postgresql://postgres:root@localhost/2"
 
 Base = declarative_base()
 
 
-class Year(Base):
-    __tablename__ = 'year'
+
+class AreaName(Base):
+    __tablename__ = 'area_name'
 
     id = Column(Integer, primary_key=True)
-    year = Column(Integer, nullable=False)
+    name = Column(String(500), nullable=False)
 
-    def __lt__(self, other):
-        return self.year < other.year
+
+class InstituteName(Base):
+    __tablename__ = 'institute_name'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(500), nullable=False)
 
 
 class Area(Base):
     __tablename__ = 'area'
-
+    year = Column(Integer, nullable=False)
     id = Column(Integer, primary_key=True)
-    name = Column(String(500), nullable=False)
-    year_id = Column(Integer, ForeignKey('year.id'))
-    year = relationship("Year", backref="areas")
+
+    area_name_id = Column(Integer, ForeignKey('area_name.id'))
+    area_name = relationship("AreaName", uselist=False, backref="area_name")
+
 
 
 class Institute(Base):
     __tablename__ = 'institute'
 
     id = Column(Integer, primary_key=True)
+
     area_id = Column(Integer, ForeignKey('area.id'))
-    name = Column(String(500), nullable=False)
+    institute_name_id = Column(Integer, ForeignKey('institute_name.id'))
+
     area = relationship("Area", backref="institutes")
+
+    institute_name = relationship("InstituteName", uselist=False, backref="institute_name")
 
 
 class Indicator(Base):
     __tablename__ = 'indicators'
 
     id = Column(Integer, primary_key=True)
+    institute_id = Column(Integer, ForeignKey('institute.id'))
+
     indicator = Column(String(500), nullable=False)
     value = Column(String(500), nullable=False)
-    institute_id = Column(Integer, ForeignKey('institute.id'))
+
     institute = relationship("Institute", backref="indicators")
 
 
@@ -53,66 +65,82 @@ class Direction(Base):
     __tablename__ = 'direction'
 
     id = Column(Integer, primary_key=True)
-    direction = Column(String(250), nullable=False)
     institute_id = Column(Integer, ForeignKey('institute.id'))
+
+    direction = Column(String(250), nullable=False)
+
     institute = relationship("Institute", backref="directions")
 
 
-class AreaSummary(Base):
-    __tablename__ = 'area_sum'
-
-    id = Column(Integer, primary_key=True)
-    year_id = Column(Integer, ForeignKey('year.id'))
-    year = relationship("Year", backref="areas_summary")
-    name = Column(String(500), nullable=False)
 
 class Subject(Base):
     __tablename__ = 'subject'
     id = Column(Integer, primary_key=True)
-    area_id = Column(Integer, ForeignKey('area_sum.id'))
     code = Column(String(500), nullable=False)
+    name = Column(String(250), nullable=False)
+    area_id = Column(Integer, ForeignKey('area.id'))
 
-    area_summary = relationship("AreaSummary", backref="subjects")
+    area_summary = relationship("Area", backref="subjects")
+
 
 class P211(Base):
     __tablename__ = 'p211'
+
     id = Column(Integer, primary_key=True)
     subject_id = Column(Integer, ForeignKey('subject.id'))
+
     budget_amount = Column(Integer, nullable=True)
     contract_amount = Column(Integer, nullable=True)
     total_fed_amount = Column(Integer, nullable=True)
     gr_contract_amount = Column(Integer, nullable=True)
     women_amount = Column(Integer, nullable=True)
-    subject = relationship("Subject", backref="P211")
+
+    subject = relationship("Subject", backref="P211", uselist=False)
 
 
 class P2124(Base):
     __tablename__ = 'p2124'
+
     id = Column(Integer, primary_key=True)
     subject_id = Column(Integer, ForeignKey('subject.id'))
+
     contract_amount = Column(Integer, nullable=True)
     total_fed_amount = Column(Integer, nullable=True)
     women_amount = Column(Integer, nullable=True)
-    subject = relationship("Subject", backref="P2124")
+
+    subject = relationship("Subject", backref="P2124", uselist=False)
+
 
 class P213(Base):
     __tablename__ = 'p213'
+
     id = Column(Integer, primary_key=True)
     subject_id = Column(Integer, ForeignKey('subject.id'))
+
     total_grad_amount = Column(Integer, nullable=True)
     magistracy_amount = Column(Integer, nullable=True)
     total_fed_amount = Column(Integer, nullable=True)
     contract_amount = Column(Integer, nullable=True)
     women_amount = Column(Integer, nullable=True)
-    subject = relationship("Subject", backref="P213")
+
+    subject = relationship("Subject", backref="P213", uselist=False)
+
+class Country(Base):
+    __tablename__ = 'country'
+    id = Column(Integer, primary_key=True)
+    code = Column(Integer, nullable=True)
+    name = Column(String(500), nullable=True)
 
 
 class PostgraduateBachelor(Base):
     __tablename__ = 'postgraduate_bachelor'
+
     id = Column(Integer, primary_key=True)
-    country = Column(String(500), nullable=True)
+
+    country_id = Column(Integer, ForeignKey('country.id'))
+    area_id = Column(Integer, ForeignKey('area.id'))
+
     row_number = Column(Integer, nullable=True)
-    code = Column(Integer, nullable=True)
     accepted_students_amount = Column(Integer, nullable=True)
     a_fed_budget = Column(Float, nullable=True)
     a_rf_budget = Column(Float, nullable=True)
@@ -129,16 +157,17 @@ class PostgraduateBachelor(Base):
     g_local_budget = Column(Float, nullable=True)
     g_contract_amount = Column(Integer)
 
-    # ..
-    area_id = Column(Integer, ForeignKey('area_sum.id'))
-    area_summary = relationship("AreaSummary", backref="postgraduate_bachelors")
+    area_summary = relationship("Area", backref="postgraduate_bachelors")
+
 
 class PostgraduateSpecialty(Base):
-    id = Column(Integer, primary_key=True)
     __tablename__ = 'postgraduate_specialty'
-    country = Column(String(500), nullable=True)
+
+    id = Column(Integer, primary_key=True)
+
+    country_id = Column(Integer, ForeignKey('country.id'))
+
     row_number = Column(Integer, nullable=True)
-    code = Column(Integer, nullable=True)
     accepted_students_amount = Column(Integer, nullable=True)
     a_fed_budget = Column(Float, nullable=True)
     a_rf_budget = Column(Float, nullable=True)
@@ -155,17 +184,16 @@ class PostgraduateSpecialty(Base):
     g_local_budget = Column(Float, nullable=True)
     g_contract_amount = Column(Integer)
 
-    # ..
-    area_id = Column(Integer, ForeignKey('area_sum.id'))
+    area_id = Column(Integer, ForeignKey('area.id'))
+    area_summary = relationship("Area", backref="postgraduate_specialists")
 
-    area_summary = relationship("AreaSummary", backref="postgraduate_specialists")
 
 class PostgraduateMaster(Base):
     __tablename__ = 'postgraduate_master'
     id = Column(Integer, primary_key=True)
-    country = Column(String(500), nullable=True)
+    country_id = Column(Integer, ForeignKey('country.id'))
+
     row_number = Column(Integer, nullable=True)
-    code = Column(Integer, nullable=True)
     accepted_students_amount = Column(Integer, nullable=True)
     a_fed_budget = Column(Float, nullable=True)
     a_rf_budget = Column(Float, nullable=True)
@@ -182,9 +210,9 @@ class PostgraduateMaster(Base):
     g_local_budget = Column(Float, nullable=True)
     g_contract_amount = Column(Integer)
 
-    # ..
-    area_id = Column(Integer, ForeignKey('area_sum.id'))
-    area_summary = relationship("AreaSummary", backref="postgraduate_masters")
+    area_id = Column(Integer, ForeignKey('area.id'))
+    area_summary = relationship("Area", backref="postgraduate_masters")
+
 
 engine = create_engine(conn_string)
 
