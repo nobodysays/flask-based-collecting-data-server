@@ -12,42 +12,6 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
-def parsing_default(obj):
-    if isinstance(obj, Area):
-        return {
-            "id": obj.id,
-            "name": obj.name,
-            "institutes": obj.institutes
-        }
-    if isinstance(obj, Institute):
-        return {
-            "id": obj.id,
-            "name": obj.name,
-            "area_id": obj.area_id,
-            "indicators": obj.indicators
-        }
-    if isinstance(obj, Indicator):
-        return {
-            "id": obj.id,
-            "indicator": obj.indicator,
-            "value": obj.value,
-            "institute_id": obj.institute_id,
-
-        }
-    if isinstance(obj, Year):
-        return {
-            "id": obj.id,
-            "year": obj.year,
-            "areas": obj.areas,
-        }
-    if isinstance(obj, Direction):
-        return {
-            "id": obj.id,
-            "direction": obj.direction,
-            "institute_id": obj.institute_id,
-        }
-
-
 @app.route('/areas', methods=['GET'])
 def get_areas():
     areas = session.query(Area).all()
@@ -59,17 +23,19 @@ def get_area_summary(year, area_id):
     area = session.query(Area).filter(and_(Area.id == area_id, Area.year == year)).one()
     return render_template("summary_area.html", area=area)
 
+
 @app.route('/', methods=['GET'])
 def get_years():
     areas = session.query(Area).all()
+    # сначала находим все варианты годов, потом удаляем повторяющиеся
     years = set([area.year for area in areas])
+
     return render_template("years.html", years=years)
 
 
 @app.route('/year/<int:year>', methods=['GET'])
 def get_year(year):
     areas = session.query(Area).filter_by(year=year).all()
-    areas_name = []
     return render_template("areas.html", areas=areas, year=year)
 
 
@@ -81,29 +47,12 @@ def get_area(year, area_id):
 
 
 @app.route('/year/<int:year>/areas/<int:area_id>/institute/<int:institute_id>', methods=['GET'])
-def get_institute(year,area_id,institute_id):
+def get_institute(year, area_id, institute_id):
     institute = session.query(Institute).filter_by(id=institute_id).one()
     return render_template("institute.html", institute=institute)
 
 
-@app.route('/summary/<int:year_id>', methods=['GET', 'POST'])
-def get_summary_year(year_id):
-    areas = session.query(AreaSummary).filter_by(year_id=year_id)
-    return render_template("summary.html", areas=areas)
-
-
-@app.route('/summary/area/<int:area_id>', methods=['GET', 'POST'])
-def get_summary_area(area_id):
-    area = session.query(AreaSummary).filter_by(id=area_id).one()
-    return render_template("summary_area.html", area=area)
-
-
-
-
-
-
-
-
+# TODO: необходимо доделать удаление университета
 @app.route('/api/institute/<int:institute_id>/delete', methods=['POST'])
 def delete_institute(institute_id):
     for direction in session.query(Direction).filter_by(institute_id=institute_id).all():
@@ -115,6 +64,7 @@ def delete_institute(institute_id):
     return "ok"
 
 
+# TODO: необходимо доделать удаление
 @app.route('/api/area/<int:area_id>/delete', methods=['POST', 'GET'])
 def delete_area(area_id):
     for institute in session.query(Institute).filter_by(area_id=area_id).all():
@@ -125,42 +75,15 @@ def delete_area(area_id):
     return "ok"
 
 
-@app.route('/api/year/<int:year_id>/delete', methods=['POST', 'GET'])
-def delete_year(year_id):
-    for area in session.query(Area).filter_by(year_id=year_id).all():
-        delete_area(area.id)
-
-    session.delete(session.query(Year).filter_by(id=year_id).one())
-    session.commit()
-    return "ok"
-
-
-
-
-@app.route('/api/yearsummary/upload/force', methods=['POST', 'GET'])
-def new_yearsummary_force():
-    data = json.loads(request.files['json_data'].read())
-    return add_year_summary_to_bd_force(data)
-
-
-#@app.route('/api/yearsummary/upload/', methods=['POST', 'GET'])
-#def new_yearsummary():
-#    data = json.loads(request.files['json_data'].read())
-#    return add_year_summary_to_bd(data)
-
-
 @app.route('/api/year/upload', methods=['POST', 'GET'])
-
-
-@app.route('/api/year/testupload', methods=['POST', 'GET'])
-def new_testyear():
+def new_year():
     json_data = json.loads(request.files['json_data'].read())
     areas = session.query(AreaName).all()
     institutes = session.query(InstituteName).all()
 
     area_names = [area.name.upper() for area in areas]
     institute_names = [institute.name.upper() for institute in institutes]
-    #доьавление новых названий областей и университетов
+    # доьавление новых названий областей и университетов
     for area_data in json_data['areas']:
         area_name = area_data['name'].upper()
         if area_name not in area_names:
@@ -175,10 +98,9 @@ def new_testyear():
                 session.add(temp)
                 institute_names.append(temp)
     session.commit()
-    #извлекаем обновленные данные
+    # извлекаем обновленные данные
     institutes = session.query(InstituteName).all()
     areas = session.query(AreaName).all()
-
 
     for area_data in json_data['areas']:
         area_name = area_data['name'].upper()
@@ -191,24 +113,25 @@ def new_testyear():
             institute_name_id = find_element_by_name(institutes, institute_name).id
             current_institute = Institute(institute_name_id=institute_name_id)
             for indicator_data in institute_data['indicators']:
-                current_institute.indicators.append(Indicator(indicator = indicator_data['indicator'], value = indicator_data['value']))
+                current_institute.indicators.append(
+                    Indicator(indicator=indicator_data['indicator'], value=indicator_data['value']))
 
             for direction_data in institute_data["directions"]:
-                current_institute.directions.append(Direction(direction= direction_data['direction']))
+                current_institute.directions.append(Direction(direction=direction_data['direction']))
 
             current_area.institutes.append(current_institute)
         session.add(current_area)
-    print("COMMINTING")
+    print("COMMITING")
     session.commit()
     return "ok"
 
 
-@app.route('/api/year/summarytestupload', methods=['POST', 'GET'])
-def new_summarytestyear():
+@app.route('/api/year/summary_upload', methods=['POST', 'GET'])
+def new_year_summary():
     json_data = json.loads(request.files['json_data'].read())
     area_names = [area.name.upper() for area in session.query(AreaName).all()]
     country_codes = [country.code for country in session.query(Country).all()]
-    #добавляем страны
+    # добавляем страны, которых до этого не было
     for area_data in json_data['areas']:
         bachelor_data = area_data['bachelor']
         spec_data = area_data['spec']
@@ -232,15 +155,17 @@ def new_summarytestyear():
                 session.add(Country(name=el['country'].upper(), code=country_code))
                 country_codes.append(country_code)
 
-    #добавляем области
+    # добавляем области
     for area in json_data['areas']:
         area_name = area['name'].upper()
         if area_name not in area_names:
             session.add(AreaName(name=area_name))
             area_names.append(area_name)
-
+    # заносим изменения в базу данных
     session.commit()
-    area_names= session.query(AreaName).all()
+
+    # извлекаем уже обновленные данные из бд
+    area_names = session.query(AreaName).all()
     areas = session.query(Area).all()
     countries = session.query(Country).all()
 
@@ -250,11 +175,13 @@ def new_summarytestyear():
         print(area_name)
         area = None
         found = False
-        for e in areas:
-            name = e.area_name.name
+
+        # находим область по названию и году
+        for с in areas:
+            name = с.area_name.name
             if name == area_name:
-                if (e.year == int(year)):
-                    area = e
+                if с.year == int(year):
+                    area = с
                     found = True
                     break
                 else:
@@ -263,10 +190,10 @@ def new_summarytestyear():
                     found = True
                     break
 
-
         if not found:
+            # если не нашли, то извлекаем id названия области и создаем новую область с текущим годом
             area_name_id = find_element_by_name(area_names, area_name).id
-            area = Area(year = year, area_name_id = area_name_id)
+            area = Area(year=year, area_name_id=area_name_id)
 
         data_subjects = area_data['subjects']
         data_bachelors = area_data['bachelor']
@@ -274,7 +201,7 @@ def new_summarytestyear():
         data_specialists = area_data['spec']
 
         for data_subject in data_subjects:
-            current_subject = Subject(code=data_subject['code'], name = data_subject['name'])
+            current_subject = Subject(code=data_subject['code'], name=data_subject['name'])
             current_p211 = P211()
             data_current_p211 = data_subject['p211']
             current_p211.budget_amount = data_current_p211['budget_amount']
@@ -297,7 +224,6 @@ def new_summarytestyear():
             current_p213.contract_amount = data_current_p213['contract_amount']
             current_p213.women_amount = data_current_p213['women_amount']
 
-
             current_subject.P211 = [current_p211]
             current_subject.P2124 = [current_p2124]
             current_subject.P213 = [current_p213]
@@ -306,10 +232,10 @@ def new_summarytestyear():
 
         for data_bachelor in data_bachelors:
             current_bachelor = PostgraduateBachelor()
-            code=data_bachelor['code']
-            for e in countries:
-                if e.code == code:
-                    current_bachelor.country_id = e.id
+            code = data_bachelor['code']
+            for с in countries:
+                if с.code == code:
+                    current_bachelor.country_id = с.id
 
             current_bachelor.row_number = data_bachelor['row_number']
             current_bachelor.accepted_students_amount = data_bachelor['accepted_students_amount']
@@ -332,9 +258,9 @@ def new_summarytestyear():
         for data_master in data_masters:
             current_master = PostgraduateMaster()
             code = data_master['code']
-            for e in countries:
-                if e.code == code:
-                    current_master.country_id = e.id
+            for с in countries:
+                if с.code == code:
+                    current_master.country_id = с.id
             current_master.row_number = data_master['row_number']
             current_master.accepted_students_amount = data_master['accepted_students_amount']
             current_master.a_fed_budget = data_master['a_fed_budget']
@@ -356,9 +282,9 @@ def new_summarytestyear():
         for data_specialist in data_specialists:
             current_specialist = PostgraduateSpecialty()
             code = data_specialist['code']
-            for e in countries:
-                if e.code == code:
-                    current_specialist.country_id = e.id
+            for с in countries:
+                if с.code == code:
+                    current_specialist.country_id = с.id
             current_specialist.row_number = data_specialist['row_number']
             current_specialist.code = data_specialist['code']
             current_specialist.accepted_students_amount = data_specialist['accepted_students_amount']
@@ -382,57 +308,7 @@ def new_summarytestyear():
 
     session.commit()
 
-
-
-
-
     return "ok"
-def new_year():
-    json_data = json.loads(request.files['json_data'].read())
-
-    area_names = [area.name.upper() for area in session.query(AreaName).all()]
-    institute_names = [institute.name.upper() for institute in session.query(InstituteName).all()]
-
-    # добавляем новые названия областей и названия университетов
-    for area_data in json_data['areas']:
-        area_name = area_data['name'].upper()
-        if area_name not in area_names:
-            session.add(AreaName(name=area_name))
-
-        for institute_data in area_data['institutes']:
-            institute_name = institute_data['name'].upper()
-            if institute_name not in institute_names:
-                session.add(InstituteName(name=institute_name.upper()))
-    session.commit()
-    area_names = session.query(AreaName).all()
-    institute_names = session.query(InstituteName).all()
-
-    for area_data in json_data['areas']:
-        area_name = area_data['name'].upper()
-        print(area_name)
-        area_name_id = find_element_by_name(area_names, area_name).id
-        current_area = Area(area_name_id=area_name_id, year=json_data['year'])
-        for institute_data in area_data['institutes']:
-            institute_name = institute_data['name'].upper()
-            print(institute_name)
-            institute_name_id = find_element_by_name(institute_names, institute_name).id
-            current_institute = Institute(institute_name_id=institute_name_id)
-            for indicator_data in institute_data['indicators']:
-                current_institute.indicators.append(Indicator(indicator = indicator_data['indicator'], value = indicator_data['value']))
-
-            for direction_data in institute_data["directions"]:
-                current_institute.directions.append(Direction(direction= direction_data['direction']))
-
-            current_area.institutes.append(current_institute)
-        session.add(current_area)
-
-    print("commit")
-    session.commit()
-
-    return "ok"
-
-
-
 
 
 def find_element_by_name(array, target):
@@ -442,9 +318,6 @@ def find_element_by_name(array, target):
     return -1
 
 
-
-
 if __name__ == '__main__':
     app.debug = True
     app.run()
-2

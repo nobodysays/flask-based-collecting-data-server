@@ -1,15 +1,11 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, Float
-
-from sqlalchemy.ext.declarative import declarative_base
-
-from sqlalchemy.orm import relationship
-
 from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 conn_string = "postgresql://postgres:root@localhost/2"
 
 Base = declarative_base()
-
 
 
 class AreaName(Base):
@@ -35,7 +31,6 @@ class Area(Base):
     area_name = relationship("AreaName", uselist=False, backref="area_name")
 
 
-
 class Institute(Base):
     __tablename__ = 'institute'
 
@@ -47,6 +42,11 @@ class Institute(Base):
     area = relationship("Area", backref="institutes")
 
     institute_name = relationship("InstituteName", uselist=False, backref="institute_name")
+    niu = Column(String(500), nullable=True)
+    oru = Column(String(500), nullable=True)
+    _5100 = Column(String(500), nullable=True)
+    iop = Column(String(500), nullable=True)
+    psr = Column(String(500), nullable=True)
 
 
 class Indicator(Base):
@@ -70,7 +70,6 @@ class Direction(Base):
     direction = Column(String(250), nullable=False)
 
     institute = relationship("Institute", backref="directions")
-
 
 
 class Subject(Base):
@@ -124,6 +123,7 @@ class P213(Base):
     women_amount = Column(Integer, nullable=True)
 
     subject = relationship("Subject", backref="P213", uselist=False)
+
 
 class Country(Base):
     __tablename__ = 'country'
