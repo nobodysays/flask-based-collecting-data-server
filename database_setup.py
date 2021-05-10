@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-conn_string = "postgresql://postgres:root@localhost/2"
+conn_string = "postgresql://my_user:password123@localhost/my_database"
 
 Base = declarative_base()
 

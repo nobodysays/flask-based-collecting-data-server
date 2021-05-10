@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, render_template, request, json
 from sqlalchemy import exists, and_
 from sqlalchemy.orm import sessionmaker
@@ -258,9 +260,9 @@ def new_year_summary():
         for data_master in data_masters:
             current_master = PostgraduateMaster()
             code = data_master['code']
-            for с in countries:
-                if с.code == code:
-                    current_master.country_id = с.id
+            for c in countries:
+                if c.code == code:
+                    current_master.country_id = c.id
             current_master.row_number = data_master['row_number']
             current_master.accepted_students_amount = data_master['accepted_students_amount']
             current_master.a_fed_budget = data_master['a_fed_budget']
@@ -282,9 +284,9 @@ def new_year_summary():
         for data_specialist in data_specialists:
             current_specialist = PostgraduateSpecialty()
             code = data_specialist['code']
-            for с in countries:
-                if с.code == code:
-                    current_specialist.country_id = с.id
+            for c in countries:
+                if c.code == code:
+                    current_specialist.country_id = c.id
             current_specialist.row_number = data_specialist['row_number']
             current_specialist.code = data_specialist['code']
             current_specialist.accepted_students_amount = data_specialist['accepted_students_amount']
@@ -310,6 +312,196 @@ def new_year_summary():
 
     return "ok"
 
+@app.cli.command('initdb')
+def read_json():
+    base_dir = "C:\\Users\\protuberanzen\\PycharmProjects\\collecting-data\\vpo\\"
+
+    for file in os.listdir(base_dir):
+        print(file)
+        json_path = os.path.join(base_dir, file)
+        with open(json_path, encoding='utf8') as json_file:
+            json_data = json.load(json_file)
+            
+        area_names = [area.name.upper() for area in session.query(AreaName).all()]
+        country_codes = [country.code for country in session.query(Country).all()]
+        # добавляем страны, которых до этого не было
+        for area_data in json_data['areas']:
+            bachelor_data = area_data['bachelor']
+            spec_data = area_data['spec']
+            magistracy_data = area_data['magistracy']
+
+            for el in bachelor_data:
+                country_code = el['code']
+                if country_code not in country_codes:
+                    session.add(Country(name=el['country'].upper(), code=country_code))
+                    country_codes.append(country_code)
+
+            for el in spec_data:
+                country_code = el['code']
+                if country_code not in country_codes:
+                    session.add(Country(name=el['country'].upper(), code=country_code))
+                    country_codes.append(country_code)
+
+            for el in magistracy_data:
+                country_code = el['code']
+                if country_code not in country_codes:
+                    session.add(Country(name=el['country'].upper(), code=country_code))
+                    country_codes.append(country_code)
+
+        # добавляем области
+        for area in json_data['areas']:
+            area_name = area['name'].upper()
+            if area_name not in area_names:
+                session.add(AreaName(name=area_name))
+                area_names.append(area_name)
+        # заносим изменения в базу данных
+        session.commit()
+
+        # извлекаем уже обновленные данные из бд
+        area_names = session.query(AreaName).all()
+        areas = session.query(Area).all()
+        countries = session.query(Country).all()
+
+        year = json_data['year']
+        for area in json_data['areas']:
+            area_name = area['name'].upper()
+            print(area_name)
+            area = None
+            found = False
+
+            # находим область по названию и году
+            for с in areas:
+                name = с.area_name.name
+                if name == area_name:
+                    if с.year == int(year):
+                        area = с
+                        found = True
+                        break
+                    else:
+                        area_name_id = find_element_by_name(area_names, area_name).id
+                        area = Area(year=year, area_name_id=area_name_id)
+                        found = True
+                        break
+
+            if not found:
+                # если не нашли, то извлекаем id названия области и создаем новую область с текущим годом
+                area_name_id = find_element_by_name(area_names, area_name).id
+                area = Area(year=year, area_name_id=area_name_id)
+
+            data_subjects = area_data['subjects']
+            data_bachelors = area_data['bachelor']
+            data_masters = area_data['magistracy']
+            data_specialists = area_data['spec']
+
+            for data_subject in data_subjects:
+                current_subject = Subject(code=data_subject['code'], name=data_subject['name'])
+                current_p211 = P211()
+                data_current_p211 = data_subject['p211']
+                current_p211.budget_amount = data_current_p211['budget_amount']
+                current_p211.contract_amount = data_current_p211['contract_amount']
+                current_p211.total_fed_amount = data_current_p211['total_fed_amount']
+                current_p211.gr_contract_amount = data_current_p211['gr_contract_amount']
+                current_p211.women_amount = data_current_p211['women_amount']
+
+                current_p2124 = P2124()
+                data_current_p2124 = data_subject['p2124']
+                current_p2124.contract_amount = data_current_p2124['contract_amount']
+                current_p2124.total_fed_amount = data_current_p2124['total_fed_amount']
+                current_p2124.women_amount = data_current_p2124['women_amount']
+
+                current_p213 = P213()
+                data_current_p213 = data_subject['p213']
+                current_p213.total_grad_amount = data_current_p213['total_grad_amount']
+                current_p213.magistracy_amount = data_current_p213['magistracy_amount']
+                current_p213.total_fed_amount = data_current_p213['total_fed_amount']
+                current_p213.contract_amount = data_current_p213['contract_amount']
+                current_p213.women_amount = data_current_p213['women_amount']
+
+                current_subject.P211 = [current_p211]
+                current_subject.P2124 = [current_p2124]
+                current_subject.P213 = [current_p213]
+
+                area.subjects.append(current_subject)
+
+            for data_bachelor in data_bachelors:
+                current_bachelor = PostgraduateBachelor()
+                code = data_bachelor['code']
+                for с in countries:
+                    if с.code == code:
+                        current_bachelor.country_id = с.id
+
+                current_bachelor.row_number = data_bachelor['row_number']
+                current_bachelor.accepted_students_amount = data_bachelor['accepted_students_amount']
+                current_bachelor.a_fed_budget = data_bachelor['a_fed_budget']
+                current_bachelor.a_rf_budget = data_bachelor['a_rf_budget']
+                current_bachelor.a_local_budget = data_bachelor['a_local_budget']
+                current_bachelor.a_contract_amount = data_bachelor['a_contract_amount']
+                current_bachelor.total_students_amount = data_bachelor['total_students_amount']
+                current_bachelor.t_fed_budget = data_bachelor['t_fed_budget']
+                current_bachelor.t_rf_budget = data_bachelor['t_rf_budget']
+                current_bachelor.t_local_budget = data_bachelor['t_local_budget']
+                current_bachelor.t_contract_amount = data_bachelor['t_contract_amount']
+                current_bachelor.grad_students_amount = data_bachelor['grad_students_amount']
+                current_bachelor.g_fed_budget = data_bachelor['g_fed_budget']
+                current_bachelor.g_rf_budget = data_bachelor['g_rf_budget']
+                current_bachelor.g_local_budget = data_bachelor['g_local_budget']
+                current_bachelor.g_contract_amount = data_bachelor['g_contract_amount']
+                area.postgraduate_bachelors.append(current_bachelor)
+
+            for data_master in data_masters:
+                current_master = PostgraduateMaster()
+                code = data_master['code']
+                for c in countries:
+                    if c.code == code:
+                        current_master.country_id = c.id
+                current_master.row_number = data_master['row_number']
+                current_master.accepted_students_amount = data_master['accepted_students_amount']
+                current_master.a_fed_budget = data_master['a_fed_budget']
+                current_master.a_rf_budget = data_master['a_rf_budget']
+                current_master.a_local_budget = data_master['a_local_budget']
+                current_master.a_contract_amount = data_master['a_contract_amount']
+                current_master.total_students_amount = data_master['total_students_amount']
+                current_master.t_fed_budget = data_master['t_fed_budget']
+                current_master.t_rf_budget = data_master['t_rf_budget']
+                current_master.t_local_budget = data_master['t_local_budget']
+                current_master.t_contract_amount = data_master['t_contract_amount']
+                current_master.grad_students_amount = data_master['grad_students_amount']
+                current_master.g_fed_budget = data_master['g_fed_budget']
+                current_master.g_rf_budget = data_master['g_rf_budget']
+                current_master.g_local_budget = data_master['g_local_budget']
+                current_master.g_contract_amount = data_master['g_contract_amount']
+                area.postgraduate_masters.append(current_master)
+
+            for data_specialist in data_specialists:
+                current_specialist = PostgraduateSpecialty()
+                code = data_specialist['code']
+                for c in countries:
+                    if c.code == code:
+                        current_specialist.country_id = c.id
+                current_specialist.row_number = data_specialist['row_number']
+                current_specialist.code = data_specialist['code']
+                current_specialist.accepted_students_amount = data_specialist['accepted_students_amount']
+                current_specialist.a_fed_budget = data_specialist['a_fed_budget']
+                current_specialist.a_rf_budget = data_specialist['a_rf_budget']
+                current_specialist.a_local_budget = data_specialist['a_local_budget']
+                current_specialist.a_contract_amount = data_specialist['a_contract_amount']
+                current_specialist.total_students_amount = data_specialist['total_students_amount']
+                current_specialist.t_fed_budget = data_specialist['t_fed_budget']
+                current_specialist.t_rf_budget = data_specialist['t_rf_budget']
+                current_specialist.t_local_budget = data_specialist['t_local_budget']
+                current_specialist.t_contract_amount = data_specialist['t_contract_amount']
+                current_specialist.grad_students_amount = data_specialist['grad_students_amount']
+                current_specialist.g_fed_budget = data_specialist['g_fed_budget']
+                current_specialist.g_rf_budget = data_specialist['g_rf_budget']
+                current_specialist.g_local_budget = data_specialist['g_local_budget']
+                current_specialist.g_contract_amount = data_specialist['g_contract_amount']
+                area.postgraduate_specialists.append(current_specialist)
+
+            session.add(area)
+
+        session.commit()
+
+    return "ok"
 
 def find_element_by_name(array, target):
     for el in array:
