@@ -13,6 +13,8 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
+p25_table_rows = ['Выпуск', 'Численность студентов', 'Прием']
+
 
 @app.route('/areas', methods=['GET'])
 def get_areas():
@@ -312,8 +314,9 @@ def new_year_summary():
 
     return "ok"
 
-@app.cli.command('initdb')
-def read_json():
+
+@app.cli.command('initdbVPO')
+def read_json_vpo():
     base_dir = "C:\\Users\\protuberanzen\\PycharmProjects\\collecting-data\\vpo\\"
 
     for file in os.listdir(base_dir):
@@ -321,7 +324,7 @@ def read_json():
         json_path = os.path.join(base_dir, file)
         with open(json_path, encoding='utf8') as json_file:
             json_data = json.load(json_file)
-            
+
         area_names = [area.name.upper() for area in session.query(AreaName).all()]
         country_codes = [country.code for country in session.query(Country).all()]
         # добавляем страны, которых до этого не было
@@ -502,6 +505,133 @@ def read_json():
         session.commit()
 
     return "ok"
+
+
+@app.cli.command('initdbOLDVPO')
+def read_json_old_vpo():
+    base_dir = "C:\\Users\\protuberanzen\\PycharmProjects\\collecting-data\\vpo\\old\\"
+
+    for file in os.listdir(base_dir):
+        print(file)
+        json_path = os.path.join(base_dir, file)
+        with open(json_path, encoding='utf8') as json_file:
+            json_data = json.load(json_file)
+
+        area_names = [area.name.upper() for area in session.query(AreaName).all()]
+        country_codes = [country.code for country in session.query(Country).all()]
+        # добавляем страны, которых до этого не было
+        for area_data in json_data['areas']:
+            old_p210 = area_data['old_p210']
+
+            for el in old_p210:
+                country_code = el['code']
+                if country_code not in country_codes:
+                    session.add(Country(name=el['country'].upper(), code=country_code))
+                    country_codes.append(country_code)
+
+        # добавляем области
+        for area in json_data['areas']:
+            area_name = area['name'].upper()
+            if area_name not in area_names:
+                session.add(AreaName(name=area_name))
+                area_names.append(area_name)
+        # заносим изменения в базу данных
+        session.commit()
+
+        # извлекаем уже обновленные данные из бд
+        area_names = session.query(AreaName).all()
+        areas = session.query(Area).all()
+        countries = session.query(Country).all()
+
+        year = json_data['year']
+        for area in json_data['areas']:
+            area_name = area['name'].upper()
+            print(area_name)
+            area = None
+            found = False
+
+            # находим область по названию и году
+            for с in areas:
+                name = с.area_name.name
+                if name == area_name:
+                    if с.year == int(year):
+                        area = с
+                        found = True
+                        break
+                    else:
+                        area_name_id = find_element_by_name(area_names, area_name).id
+                        area = Area(year=year, area_name_id=area_name_id)
+                        found = True
+                        break
+
+            if not found:
+                # если не нашли, то извлекаем id названия области и создаем новую область с текущим годом
+                area_name_id = find_element_by_name(area_names, area_name).id
+                area = Area(year=year, area_name_id=area_name_id)
+
+            print(area)
+            data_subjects = area['subjects']
+
+            for data_subject in data_subjects:
+                current_subject = Subject(code=data_subject['code'], name=data_subject['name'])
+                current_p211 = OldP211()
+                data_current_p211 = data_subject['old_p211']
+                current_p211.total_amount = data_current_p211['total_amount']
+                current_p211.name = data_current_p211['name']
+                current_p211.contract_amount = data_current_p211['contract_amount']
+                current_p211.total_fed_amount = data_current_p211['total_fed_amount']
+
+                current_p212 = OldP212()
+                data_current_p212 = data_subject['old_p212']
+                current_p212.name = data_current_p212['name']
+                current_p212.classification = data_current_p212['classification']
+                current_p212.total_fed_amount = data_current_p212['total_fed_amount']
+                current_p212.contract_amount = data_current_p212['contract_amount']
+
+                current_p212p = OldP212P()
+                data_current_p212p = data_subject['old_p212P']
+                current_p212p.name = data_current_p212p['name']
+                current_p212p.classification = data_current_p212p['classification']
+                current_p212p.total_fed_amount = data_current_p212p['total_fed_amount']
+                current_p212p.contract_amount = data_current_p212p['contract_amount']
+                current_p212p.women_amount = data_current_p212p['women_amount']
+
+                current_subject.P211 = [current_p211]
+                current_subject.P212 = [current_p212]
+                current_subject.P212p = [current_p212p]
+
+                area.subjects.append(current_subject)
+
+            data_p25 = area['old_p25']
+
+            for p25_row in data_p25:
+                p25 = OldP25()
+                p25.name = p25_row['name']
+                p25.amount = p25_row['amount']
+                area.old_p25.append(p25)
+
+            data_p210 = area['old_p210']
+
+            for p210_row in data_p210:
+                p210 = OldP210()
+                p210.row_number = p210_row['row_number']
+                p210.accepted_students_amount = p210_row['accepted_students_amount']
+                p210.a_fed_budget = p210_row['a_fed_budget']
+                p210.a_rf_budget = p210_row['a_rf_budget']
+                p210.total_students_amount = p210_row['total_students_amount']
+                p210.t_fed_budget = p210_row['t_fed_budget']
+                p210.t_rf_budget = p210_row['t_rf_budget']
+                p210.grad_students_amount = p210_row['grad_students_amount']
+                p210.g_fed_budget = p210_row['g_fed_budget']
+                p210.g_rf_budget = p210_row['g_rf_budget']
+                area.old_p210.append(p210)
+
+            session.add(area)
+
+        session.commit()
+
+    return "ok"
+
 
 def find_element_by_name(array, target):
     for el in array:

@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-conn_string = "postgresql://my_user:password123@localhost/my_database"
+conn_string = "postgresql://postgres:123@localhost/postgres"
 
 Base = declarative_base()
 
@@ -212,6 +212,79 @@ class PostgraduateMaster(Base):
 
     area_id = Column(Integer, ForeignKey('area.id'))
     area_summary = relationship("Area", backref="postgraduate_masters")
+
+
+class OldP211(Base):
+    __tablename__ = 'old_p211'
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    name = Column(String(500), nullable=False)
+    total_amount = Column(Integer, nullable=True)
+    total_fed_amount = Column(Integer, nullable=True)
+    contract_amount = Column(Integer, nullable=True)
+
+    subject = relationship("Subject", backref="old_P211", uselist=False)
+
+
+class OldP212(Base):
+    __tablename__ = 'old_p212'
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    name = Column(String(500), nullable=False)
+    classification = Column(Integer, nullable=True)
+    total_fed_amount = Column(Integer, nullable=True)
+    contract_amount = Column(Integer, nullable=True)
+
+    subject = relationship("Subject", backref="old_P212", uselist=False)
+
+
+class OldP212P(Base):
+    __tablename__ = 'old_p212p'
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    name = Column(String(500), nullable=False)
+    classification = Column(Integer, nullable=True)
+    total_fed_amount = Column(Integer, nullable=True)
+    contract_amount = Column(Integer, nullable=True)
+    women_amount = Column(Integer, nullable=True)
+
+    subject = relationship("Subject", backref="old_P212P", uselist=False)
+    
+    
+class OldP210(Base):
+    __tablename__ = 'old_p210'
+    id = Column(Integer, primary_key=True)
+    area_id = Column(Integer, ForeignKey('area.id'))
+
+    country_id = Column(Integer, ForeignKey('country.id'))
+    row_number = Column(Integer, nullable=True)
+    accepted_students_amount = Column(Integer, nullable=True)
+    a_fed_budget = Column(Integer, nullable=True)
+    a_rf_budget = Column(Integer, nullable=True)
+    total_students_amount = Column(Integer, nullable=True)
+    t_fed_budget = Column(Integer, nullable=True)
+    t_rf_budget = Column(Integer, nullable=True)
+    grad_students_amount = Column(Integer, nullable=True)
+    g_fed_budget = Column(Integer, nullable=True)
+    g_rf_budget = Column(Integer, nullable=True)
+
+    area_id = Column(Integer, ForeignKey('area.id'))
+    area_summary = relationship("Area", backref="old_P210")
+
+
+class OldP25(Base):
+    __tablename__ = 'old_p25'
+    id = Column(Integer, primary_key=True)
+    area_id = Column(Integer, ForeignKey('area.id'))
+
+    name = Column(String(500), nullable=False)
+    amount = Column(Integer, nullable=True)
+
+    area_id = Column(Integer, ForeignKey('area.id'))
+    area_summary = relationship("Area", backref="old_P25")
 
 
 engine = create_engine(conn_string)
