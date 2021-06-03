@@ -1,11 +1,9 @@
 import os
 
 from flask import Flask, render_template, request, json
-from sqlalchemy import exists, and_
+from sqlalchemy import and_
 from sqlalchemy.orm import sessionmaker
 from database_setup import *
-
-app = Flask(__name__)
 
 engine = create_engine(conn_string)
 Base.metadata.bind = engine
@@ -13,7 +11,16 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
-p25_table_rows = ['Выпуск', 'Численность студентов', 'Прием']
+
+class MyFlaskApp(Flask):
+    def run(self, host=None, port=None, debug=None, load_dotenv=True, **options):
+        if not self.debug or os.getenv('WERKZEUG_RUN_MAIN') == 'true':
+            with self.app_context():
+                read_json_old_vpo()
+        super(MyFlaskApp, self).run(host=host, port=port, debug=debug, load_dotenv=load_dotenv, **options)
+
+
+app = MyFlaskApp(__name__)
 
 
 @app.route('/areas', methods=['GET'])
@@ -391,10 +398,10 @@ def read_json_vpo():
                 area_name_id = find_element_by_name(area_names, area_name).id
                 area = Area(year=year, area_name_id=area_name_id)
 
-            data_subjects = area_data['subjects']
-            data_bachelors = area_data['bachelor']
-            data_masters = area_data['magistracy']
-            data_specialists = area_data['spec']
+            data_subjects = area['subjects']
+            data_bachelors = area['bachelor']
+            data_masters = area['magistracy']
+            data_specialists = area['spec']
 
             for data_subject in data_subjects:
                 current_subject = Subject(code=data_subject['code'], name=data_subject['name'])
@@ -509,7 +516,7 @@ def read_json_vpo():
 
 @app.cli.command('initdbOLDVPO')
 def read_json_old_vpo():
-    base_dir = "C:\\Users\\protuberanzen\\PycharmProjects\\collecting-data\\vpo\\old\\"
+    base_dir = "C:\\Users\\protuberanzen\\PycharmProjects\\collecting-data\\vpo\\shortOld\\"
 
     for file in os.listdir(base_dir):
         print(file)
@@ -602,6 +609,7 @@ def read_json_old_vpo():
 
                 area.subjects.append(current_subject)
 
+
             data_p25 = area['old_p25']
 
             for p25_row in data_p25:
@@ -642,4 +650,4 @@ def find_element_by_name(array, target):
 
 if __name__ == '__main__':
     app.debug = True
-    app.run()
+    app.run(debug=True)
