@@ -181,8 +181,8 @@ def new_year_summary():
     countries = session.query(Country).all()
 
     year = json_data['year']
-    for area in json_data['areas']:
-        area_name = area['name'].upper()
+    for area_data in json_data['areas']:
+        area_name = area_data['name'].upper()
         print(area_name)
         area = None
         found = False
@@ -373,8 +373,8 @@ def read_json_vpo():
         countries = session.query(Country).all()
 
         year = json_data['year']
-        for area in json_data['areas']:
-            area_name = area['name'].upper()
+        for area_data in json_data['areas']:
+            area_name = area_data['name'].upper()
             print(area_name)
             area = None
             found = False
@@ -398,10 +398,10 @@ def read_json_vpo():
                 area_name_id = find_element_by_name(area_names, area_name).id
                 area = Area(year=year, area_name_id=area_name_id)
 
-            data_subjects = area['subjects']
-            data_bachelors = area['bachelor']
-            data_masters = area['magistracy']
-            data_specialists = area['spec']
+            data_subjects = area_data['subjects']
+            data_bachelors = area_data['bachelor']
+            data_masters = area_data['magistracy']
+            data_specialists = area_data['spec']
 
             for data_subject in data_subjects:
                 current_subject = Subject(code=data_subject['code'], name=data_subject['name'])
@@ -551,8 +551,8 @@ def read_json_old_vpo():
         countries = session.query(Country).all()
 
         year = json_data['year']
-        for area in json_data['areas']:
-            area_name = area['name'].upper()
+        for area_data in json_data['areas']:
+            area_name = area_data['name'].upper()
             print(area_name)
             area = None
             found = False
@@ -577,52 +577,46 @@ def read_json_old_vpo():
                 area = Area(year=year, area_name_id=area_name_id)
 
             print(area)
-            data_subjects = area['subjects']
+            data_subjects = area_data['subjects']
 
             for data_subject in data_subjects:
                 current_subject = Subject(code=data_subject['code'], name=data_subject['name'])
                 current_p211 = OldP211()
                 data_current_p211 = data_subject['old_p211']
                 current_p211.total_amount = data_current_p211['total_amount']
-                current_p211.name = data_current_p211['name']
                 current_p211.contract_amount = data_current_p211['contract_amount']
                 current_p211.total_fed_amount = data_current_p211['total_fed_amount']
 
                 current_p212 = OldP212()
                 data_current_p212 = data_subject['old_p212']
-                current_p212.name = data_current_p212['name']
-                current_p212.classification = data_current_p212['classification']
                 current_p212.total_fed_amount = data_current_p212['total_fed_amount']
                 current_p212.contract_amount = data_current_p212['contract_amount']
 
                 current_p212p = OldP212P()
                 data_current_p212p = data_subject['old_p212P']
-                current_p212p.name = data_current_p212p['name']
-                current_p212p.classification = data_current_p212p['classification']
                 current_p212p.total_fed_amount = data_current_p212p['total_fed_amount']
                 current_p212p.contract_amount = data_current_p212p['contract_amount']
                 current_p212p.women_amount = data_current_p212p['women_amount']
 
-                current_subject.P211 = [current_p211]
-                current_subject.P212 = [current_p212]
-                current_subject.P212p = [current_p212p]
+                current_subject.OldP211 = [current_p211]
+                current_subject.OldP212 = [current_p212]
+                current_subject.OldP212P = [current_p212p]
 
                 area.subjects.append(current_subject)
 
-
-            data_p25 = area['old_p25']
+            data_p25 = area_data['old_p25']
 
             for p25_row in data_p25:
                 p25 = OldP25()
                 p25.name = p25_row['name']
                 p25.amount = p25_row['amount']
-                area.old_p25.append(p25)
+                area.old_P25.append(p25)
 
-            data_p210 = area['old_p210']
+            data_p210 = area_data['old_p210']
 
             for p210_row in data_p210:
                 p210 = OldP210()
-                p210.row_number = p210_row['row_number']
+                p210.row_number = int(p210_row['row_number'])
                 p210.accepted_students_amount = p210_row['accepted_students_amount']
                 p210.a_fed_budget = p210_row['a_fed_budget']
                 p210.a_rf_budget = p210_row['a_rf_budget']
@@ -632,7 +626,7 @@ def read_json_old_vpo():
                 p210.grad_students_amount = p210_row['grad_students_amount']
                 p210.g_fed_budget = p210_row['g_fed_budget']
                 p210.g_rf_budget = p210_row['g_rf_budget']
-                area.old_p210.append(p210)
+                area.old_P210.append(p210)
 
             session.add(area)
 
