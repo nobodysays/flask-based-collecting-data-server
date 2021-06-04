@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-conn_string = "postgresql://postgres:123@localhost/postgres"
+conn_string = "postgresql://postgres:root@localhost/2"
 
 Base = declarative_base()
 
@@ -75,7 +75,7 @@ class Direction(Base):
 class Subject(Base):
     __tablename__ = 'subject'
     id = Column(Integer, primary_key=True)
-    code = Column(String(500), nullable=False)
+    code = Column(String(500), nullable=True)
     name = Column(String(250), nullable=False)
     area_id = Column(Integer, ForeignKey('area.id'))
 
@@ -96,6 +96,93 @@ class P211(Base):
 
     subject = relationship("Subject", backref="P211", uselist=False)
 
+
+class P211_SPO(Base):
+    __tablename__ = 'spo_p211'
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    str_number = Column(Integer, nullable=True)
+    budget_amount = Column(Integer, nullable=True)
+    contract_amount = Column(Integer, nullable=True)
+    total_accepted = Column(Integer, nullable=True)
+    disabled_accepted = Column(Integer, nullable=True)
+    basic_level_amount = Column(Integer, nullable=True)
+    advanced_level = Column(Integer, nullable=True)
+    total_fed_amount = Column(Integer, nullable=True)
+    disabled_fed_amount = Column(Integer, nullable=True)
+    total_subject_amount = Column(Integer, nullable=True)
+    disabled_subject_amount = Column(Integer, nullable=True)
+    local_budget_amount = Column(Float, nullable=True)
+    budget_contract_amount = Column(Integer, nullable=True)
+    women_amount = Column(Integer, nullable=True)
+
+    subject = relationship("Subject", backref="P211_SPO", uselist=True)
+
+
+class P2121_SPO(Base):
+    __tablename__ = 'spo_p2121'
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    str_number = Column(Integer, nullable=True)
+
+    subject = relationship("Subject", backref="P2121_SPO", uselist=True)
+
+class P2124_SPO(Base):
+    __tablename__ = 'spo_p2124'
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    total_accepted = Column(Integer, nullable=True)
+    disabled_accepted = Column(Integer, nullable=True)
+    basic_level_amount = Column(Integer, nullable=True)
+    advanced_level = Column(Integer, nullable=True)
+    total_fed_amount = Column(Integer, nullable=True)
+    disabled_fed_amount = Column(Integer, nullable=True)
+    total_subject_amount = Column(Integer, nullable=True)
+    disabled_subject_amount = Column(Integer, nullable=True)
+    local_budget_amount = Column(Integer, nullable=True)
+    contract_amount = Column(Integer, nullable=True)
+    women_amount = Column(Integer, nullable=True)
+    targeted_education = Column(Integer, nullable=True)
+
+
+    subject = relationship("Subject", backref="P2124_SPO", uselist=True)
+
+class P2141_SPO(Base):
+    __tablename__ = 'spo_p2141'
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    str_number = Column(Integer, nullable=True)
+    serial_number = Column(Integer, nullable=True)
+    total_amount = Column(Integer, nullable=True)
+    total_fed_amount = Column(Integer, nullable=True)
+    total_subject_amount = Column(Integer, nullable=True)
+    local_budget_amount = Column(Integer, nullable=True)
+    legal_representative_amount = Column(Integer, nullable=True)
+    individual_amount = Column(Integer, nullable=True)
+    legal_entity_amount = Column(Integer, nullable=True)
+
+    subject = relationship("Subject", backref="P2141_SPO", uselist=True)
+
+class P2142_SPO(Base):
+    __tablename__ = 'spo_p2142'
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    str_number = Column(Integer, nullable=True)
+    code = Column(String(250), nullable=True)
+    serial_number = Column(Integer, nullable=True)
+    women_amount = Column(Integer, nullable=True)
+    accelerated_learning = Column(Integer, nullable=True)
+    total_disabled_amount = Column(Integer, nullable=True)
+    disabled_amount = Column(Integer, nullable=True)
+    disabled_children_amount = Column(Integer, nullable=True)
+    excepted_disabled = Column(Integer, nullable=True)
+    excepted_disabled_children = Column(Integer, nullable=True)
+    subject = relationship("Subject", backref="P2142_SPO", uselist=True)
 
 class P2124(Base):
     __tablename__ = 'p2124'
@@ -252,8 +339,8 @@ class OldP212P(Base):
     women_amount = Column(Integer, nullable=True)
 
     subject = relationship("Subject", backref="old_P212P", uselist=False)
-    
-    
+
+
 class OldP210(Base):
     __tablename__ = 'old_p210'
     id = Column(Integer, primary_key=True)

@@ -130,6 +130,167 @@ def new_year():
     return "ok"
 
 
+@app.route('/api/year/spo_upload', methods=['POST', 'GET'])
+def new_year_spo():
+    json_data = json.loads(request.files['json_data'].read())
+    area_names = [area.name.upper() for area in session.query(AreaName).all()]
+    # добавляем области
+    for area in json_data['areas']:
+        area_name = area['name'].upper()
+        if area_name not in area_names:
+            session.add(AreaName(name=area_name))
+            area_names.append(area_name)
+
+    # заносим изменения в базу данных
+    session.commit()
+
+    # извлекаем уже обновленные данные из бд
+    area_names = session.query(AreaName).all()
+    areas = session.query(Area).all()
+    subjects = session.query(Subject).all()
+
+    year = json_data['year']
+    for area_data in json_data['areas']:
+        area_name = area_data['name'].upper()
+        print(area_name)
+        area = None
+        found = False
+
+        # находим область по названию и году
+        for с in areas:
+            name = с.area_name.name
+            if name == area_name:
+                if с.year == int(year):
+                    area = с
+                    found = True
+                    break
+                else:
+                    area_name_id = find_element_by_name(area_names, area_name).id
+                    area = Area(year=year, area_name_id=area_name_id)
+                    found = True
+                    break
+
+        if not found:
+            # если не нашли, то извлекаем id названия области и создаем новую область с текущим годом
+            area_name_id = find_element_by_name(area_names, area_name).id
+            area = Area(year=year, area_name_id=area_name_id)
+
+        current_subject = None
+
+        for p211_spo_data in area_data["p211"]:
+
+            for subject in subjects:
+                if subject.area_id == area.id and subject.name == p211_spo_data['name']:
+                    current_subject = subject
+
+            if current_subject is None:
+                current_subject = Subject(code=p211_spo_data['code'], name=p211_spo_data['name'])
+                area.subjects.append(current_subject)
+
+            current_p211_spo = P211_SPO()
+            current_p211_spo.str_number = p211_spo_data['str_number']
+            current_p211_spo.budget_amount = p211_spo_data['budget_amount']
+            current_p211_spo.contract_amount = p211_spo_data['contract_amount']
+            current_p211_spo.total_accepted = p211_spo_data['total_accepted ']
+            current_p211_spo.disabled_accepted = p211_spo_data['disabled_accepted']
+            current_p211_spo.basic_level_amount = p211_spo_data['basic_level_amount']
+            current_p211_spo.advanced_level = p211_spo_data['advanced_level']
+            current_p211_spo.total_fed_amount = p211_spo_data['total_fed_amount']
+            current_p211_spo.disabled_fed_amount = p211_spo_data['disabled_fed_amount']
+            current_p211_spo.total_subject_amount = p211_spo_data['total_subject_amount']
+            current_p211_spo.disabled_subject_amount = p211_spo_data['disabled_subject_amount']
+            current_subject.P211_SPO.append(current_p211_spo)
+
+        for p2121_spo_data in area_data["p2121"]:
+
+            for subject in subjects:
+                if subject.area_id == area.id and subject.name == p2121_spo_data['name']:
+                    current_subject = subject
+
+            if current_subject is None:
+                current_subject = Subject(code=p2121_spo_data['code'], name=p2121_spo_data['name'])
+                area.subjects.append(current_subject)
+
+            current_p2121_spo = P2121_SPO()
+            current_p2121_spo.str_number = p2121_spo_data['str_number']
+
+            current_subject.P2121_SPO.append(current_p2121_spo)
+
+        for p2124_spo_data in area_data["p2124"]:
+
+            for subject in subjects:
+                if subject.area_id == area.id and subject.name == p2124_spo_data['name']:
+                    current_subject = subject
+
+            if current_subject is None:
+                current_subject = Subject(code="", name=p2124_spo_data['name'])
+                area.subjects.append(current_subject)
+
+            current_p2124_spo = P2124_SPO()
+            current_p2124_spo.total_accepted = p2124_spo_data['total_accepted ']
+            current_p2124_spo.disabled_accepted = p2124_spo_data['disabled_accepted ']
+            current_p2124_spo.basic_level_amount = p2124_spo_data['basic_level_amount']
+            current_p2124_spo.advanced_level = p2124_spo_data['advanced_level']
+            current_p2124_spo.total_fed_amount = p2124_spo_data['total_fed_amount']
+            current_p2124_spo.disabled_fed_amount = p2124_spo_data['disabled_fed_amount']
+            current_p2124_spo.total_subject_amount = p2124_spo_data['total_subject_amount']
+            current_p2124_spo.disabled_subject_amount = p2124_spo_data['disabled_subject_amount']
+            current_p2124_spo.local_budget_amount = p2124_spo_data['local_budget_amount']
+            current_p2124_spo.contract_amount = p2124_spo_data['contract_amount']
+            current_p2124_spo.women_amount = p2124_spo_data['women_amount']
+            current_p2124_spo.targeted_education = p2124_spo_data['targeted_education']
+            current_subject.P211_SPO.append(current_p2124_spo)
+
+
+        for p2141_spo_data in area_data["p2141"]:
+
+            for subject in subjects:
+                if subject.area_id == area.id and subject.name == p2141_spo_data['name']:
+                    current_subject = subject
+
+            if current_subject is None:
+                current_subject = Subject(code=p2141_spo_data['code'], name=p2141_spo_data['name'])
+                area.subjects.append(current_subject)
+
+            current_p2141_spo = P2141_SPO()
+            current_p2141_spo.str_number = p2141_spo_data['str_number ']
+            current_p2141_spo.serial_number = p2141_spo_data['serial_number ']
+            current_p2141_spo.total_amount = p2141_spo_data['total_amount']
+            current_p2141_spo.total_fed_amount = p2141_spo_data['total_fed_amount']
+            current_p2141_spo.total_subject_amount = p2141_spo_data['total_subject_amount']
+            current_p2141_spo.local_budget_amount = p2141_spo_data['local_budget_amount']
+            current_p2141_spo.legal_representative_amount = p2141_spo_data['legal_representative_amount']
+            current_p2141_spo.individual_amount = p2141_spo_data['individual_amount']
+            current_p2141_spo.legal_entity_amount = p2141_spo_data['legal_entity_amount']
+
+            current_subject.P211_SPO.append(current_p2141_spo)
+
+        for p2142_spo_data in area_data["p2142"]:
+
+            for subject in subjects:
+                if subject.area_id == area.id and subject.name == p2142_spo_data['name']:
+                    current_subject = subject
+
+            if current_subject is None:
+                current_subject = Subject(code=p2142_spo_data['code'], name=p2142_spo_data['name'])
+                area.subjects.append(current_subject)
+
+            current_p2142_spo = P2142_SPO()
+            current_p2142_spo.str_number = p2142_spo_data['str_number ']
+            current_p2142_spo.serial_number = p2142_spo_data['serial_number ']
+            current_p2142_spo.women_amount = p2142_spo_data['women_amount']
+            current_p2142_spo.accelerated_learning = p2142_spo_data['accelerated_learning']
+            current_p2142_spo.total_disabled_amount = p2142_spo_data['total_disabled_amount']
+            current_p2142_spo.disabled_amount = p2142_spo_data['disabled_amount']
+            current_p2142_spo.disabled_children_amount = p2142_spo_data['disabled_children_amount']
+            current_p2142_spo.excepted_disabled = p2142_spo_data['excepted_disabled']
+            current_p2142_spo.excepted_disabled_children = p2142_spo_data['excepted_disabled_children']
+
+            current_subject.P211_SPO.append(current_p2142_spo)
+
+    session.commit()
+
+
 @app.route('/api/year/summary_upload', methods=['POST', 'GET'])
 def new_year_summary():
     json_data = json.loads(request.files['json_data'].read())
@@ -174,8 +335,8 @@ def new_year_summary():
     countries = session.query(Country).all()
 
     year = json_data['year']
-    for area in json_data['areas']:
-        area_name = area['name'].upper()
+    for area_data in json_data['areas']:
+        area_name = area_data['name'].upper()
         print(area_name)
         area = None
         found = False
@@ -317,7 +478,7 @@ def new_year_summary():
 
 @app.cli.command('initdbVPO')
 def read_json_vpo():
-    base_dir = "C:\\Users\\protuberanzen\\PycharmProjects\\collecting-data\\vpo\\"
+    base_dir = "C:\\Users\\nikita\\Downloads\\"
 
     for file in os.listdir(base_dir):
         print(file)
@@ -509,7 +670,7 @@ def read_json_vpo():
 
 @app.cli.command('initdbOLDVPO')
 def read_json_old_vpo():
-    base_dir = "C:\\Users\\protuberanzen\\PycharmProjects\\collecting-data\\vpo\\old\\"
+    base_dir = "C:\\Users\\nikita\\Downloads\\"
 
     for file in os.listdir(base_dir):
         print(file)
@@ -521,6 +682,7 @@ def read_json_old_vpo():
         country_codes = [country.code for country in session.query(Country).all()]
         # добавляем страны, которых до этого не было
         for area_data in json_data['areas']:
+            print(area_data)
             old_p210 = area_data['old_p210']
 
             for el in old_p210:
