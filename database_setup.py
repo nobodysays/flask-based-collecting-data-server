@@ -319,8 +319,6 @@ class OldP212(Base):
     id = Column(Integer, primary_key=True)
     subject_id = Column(Integer, ForeignKey('subject.id'))
 
-    name = Column(String(500), nullable=False)
-    classification = Column(Integer, nullable=True)
     total_fed_amount = Column(Integer, nullable=True)
     contract_amount = Column(Integer, nullable=True)
 
@@ -332,8 +330,6 @@ class OldP212P(Base):
     id = Column(Integer, primary_key=True)
     subject_id = Column(Integer, ForeignKey('subject.id'))
 
-    name = Column(String(500), nullable=False)
-    classification = Column(Integer, nullable=True)
     total_fed_amount = Column(Integer, nullable=True)
     contract_amount = Column(Integer, nullable=True)
     women_amount = Column(Integer, nullable=True)
