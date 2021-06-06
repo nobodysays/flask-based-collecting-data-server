@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-conn_string = "postgresql://postgres:root@localhost/2"
+conn_string = "postgresql://postgres:123@localhost/postgres"
 
 Base = declarative_base()
 
@@ -129,6 +129,7 @@ class P2121_SPO(Base):
 
     subject = relationship("Subject", backref="P2121_SPO", uselist=True)
 
+
 class P2124_SPO(Base):
     __tablename__ = 'spo_p2124'
     id = Column(Integer, primary_key=True)
@@ -147,8 +148,8 @@ class P2124_SPO(Base):
     women_amount = Column(Integer, nullable=True)
     targeted_education = Column(Integer, nullable=True)
 
-
     subject = relationship("Subject", backref="P2124_SPO", uselist=True)
+
 
 class P2141_SPO(Base):
     __tablename__ = 'spo_p2141'
@@ -167,6 +168,7 @@ class P2141_SPO(Base):
 
     subject = relationship("Subject", backref="P2141_SPO", uselist=True)
 
+
 class P2142_SPO(Base):
     __tablename__ = 'spo_p2142'
     id = Column(Integer, primary_key=True)
@@ -183,6 +185,84 @@ class P2142_SPO(Base):
     excepted_disabled = Column(Integer, nullable=True)
     excepted_disabled_children = Column(Integer, nullable=True)
     subject = relationship("Subject", backref="P2142_SPO", uselist=True)
+
+
+class OldP211_SPO(Base):
+    __tablename__ = 'old_spo_p211'
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    str_number = Column(Integer, nullable=True)
+    applications_submitted = Column(Integer, nullable=True)
+    total_accepted = Column(Integer, nullable=True)
+    basic_level_amount = Column(Integer, nullable=True)
+    advanced_level = Column(Integer, nullable=True)
+    fed_accepted = Column(Integer, nullable=True)
+    subject_budget_accepted = Column(Integer, nullable=True)
+    local_budget_accepted = Column(Integer, nullable=True)
+    full_refund = Column(Integer, nullable=True)
+    subject = relationship("Subject", backref="old_P211_SPO", uselist=True)
+
+
+class OldP212_SPO(Base):
+    __tablename__ = 'old_spo_p212'
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    str_number = Column(Integer, nullable=True)
+    total_course_1 = Column(Integer, nullable=True)
+    budget_course_1 = Column(Integer, nullable=True)
+    total_course_2 = Column(Integer, nullable=True)
+    budget_course_2 = Column(Integer, nullable=True)
+    total_course_3 = Column(Integer, nullable=True)
+    budget_course_3 = Column(Integer, nullable=True)
+    total_course_4 = Column(Integer, nullable=True)
+    budget_course_4 = Column(Integer, nullable=True)
+    total_course_5 = Column(Integer, nullable=True)
+    budget_course_5 = Column(Integer, nullable=True)
+    total_course_6 = Column(Integer, nullable=True)
+    budget_course_6 = Column(Integer, nullable=True)
+    total_student_amount = Column(Integer, nullable=True)
+    subject = relationship("Subject", backref="old_P212_SPO", uselist=True)
+
+
+class OldP2122_SPO(Base):
+    __tablename__ = 'old_spo_p2122'
+    id = Column(Integer, primary_key=True)
+    subject_id = Column(Integer, ForeignKey('subject.id'))
+
+    str_number = Column(Integer, nullable=True)
+    basic_graduated = Column(Integer, nullable=True)
+    advanced_graduated = Column(Integer, nullable=True)
+    total_graduated = Column(Integer, nullable=True)
+    subject = relationship("Subject", backref="old_P2122_SPO", uselist=True)
+
+
+class OldP27_SPO(Base):
+    __tablename__ = 'old_spo_p27'
+
+    id = Column(Integer, primary_key=True)
+
+    country_id = Column(Integer, ForeignKey('country.id'))
+    area_id = Column(Integer, ForeignKey('area.id'))
+
+    str_number = Column(Integer, nullable=True)
+    country_code = Column(Integer, nullable=True)
+    total_accepted = Column(Integer, nullable=True)
+    fed_budget_accepted = Column(Integer, nullable=True)
+    subject_budget_accepted = Column(Integer, nullable=True)
+    full_refund_accepted = Column(Integer, nullable=True)
+    total_amount = Column(Integer, nullable=True)
+    fed_budget_amount = Column(Integer, nullable=True)
+    subject_budget_amount = Column(Integer, nullable=True)
+    full_refund_amount = Column(Integer, nullable=True)
+    total_graduated = Column(Integer, nullable=True)
+    fed_budget_graduated = Column(Integer, nullable=True)
+    subject_budget_graduated = Column(Integer, nullable=True)
+    full_refund_graduated = Column(Integer, nullable=True)
+
+    area_summary = relationship("Area", backref="old_P27_SPO")
+
 
 class P2124(Base):
     __tablename__ = 'p2124'
