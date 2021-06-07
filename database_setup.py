@@ -3,8 +3,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-conn_string = "postgresql://postgres:123@localhost/postgres"
-
+#conn_string = "postgresql://postgres:123@localhost/postgres"
+conn_string = "postgresql://postgres:root@localhost/17"
 Base = declarative_base()
 
 
@@ -157,7 +157,7 @@ class P2141_SPO(Base):
     subject_id = Column(Integer, ForeignKey('subject.id'))
 
     str_number = Column(Integer, nullable=True)
-    serial_number = Column(Integer, nullable=True)
+    serial_number = Column(String(250), nullable=True)
     total_amount = Column(Integer, nullable=True)
     total_fed_amount = Column(Integer, nullable=True)
     total_subject_amount = Column(Integer, nullable=True)
@@ -176,7 +176,7 @@ class P2142_SPO(Base):
 
     str_number = Column(Integer, nullable=True)
     code = Column(String(250), nullable=True)
-    serial_number = Column(Integer, nullable=True)
+    serial_number = Column(String(250), nullable=True)
     women_amount = Column(Integer, nullable=True)
     accelerated_learning = Column(Integer, nullable=True)
     total_disabled_amount = Column(Integer, nullable=True)

@@ -16,7 +16,7 @@ class MyFlaskApp(Flask):
     def run(self, host=None, port=None, debug=None, load_dotenv=True, **options):
         if not self.debug or os.getenv('WERKZEUG_RUN_MAIN') == 'true':
             with self.app_context():
-                read_json_old_spo()
+                new_year_spo()
         super(MyFlaskApp, self).run(host=host, port=port, debug=debug, load_dotenv=load_dotenv, **options)
 
 
@@ -139,13 +139,15 @@ def new_year():
 
 @app.route('/api/year/spo_upload', methods=['POST', 'GET'])
 def new_year_spo():
-    base_dir = "C:\\Users\\protuberanzen\\PycharmProjects\\collecting-data\\vpo\\shortSpo\\"
+    base_dir = "C:\\Users\\nikita\\Downloads\\test\\"
+
 
     for file in os.listdir(base_dir):
         print(file)
         json_path = os.path.join(base_dir, file)
         with open(json_path, encoding='utf8') as json_file:
             json_data = json.load(json_file)
+
         area_names = [area.name.upper() for area in session.query(AreaName).all()]
         # добавляем области
         for area in json_data['areas']:
@@ -188,17 +190,18 @@ def new_year_spo():
                 area_name_id = find_element_by_name(area_names, area_name).id
                 area = Area(year=year, area_name_id=area_name_id)
 
-            current_subject = None
 
+            session.commit()
             for p211_spo_data in area_data["p211"]:
-
+                current_subject = None
+                print(p211_spo_data['name'])
                 for subject in subjects:
                     if subject.area_id == area.id and subject.name == p211_spo_data['name']:
                         current_subject = subject
 
                 if current_subject is None:
                     current_subject = Subject(code=p211_spo_data['code'], name=p211_spo_data['name'])
-                    area.subjects.append(current_subject)
+                    subjects.append(current_subject)
 
                 current_p211_spo = P211_SPO()
                 current_p211_spo.str_number = p211_spo_data['str_number']
@@ -213,31 +216,32 @@ def new_year_spo():
                 current_p211_spo.total_subject_amount = p211_spo_data['total_subject_amount']
                 current_p211_spo.disabled_subject_amount = p211_spo_data['disabled_subject_amount']
                 current_subject.P211_SPO.append(current_p211_spo)
+                area.subjects.append(current_subject)
 
             for p2121_spo_data in area_data["p2121"]:
-
+                current_subject = None
+                print(p2121_spo_data['name'])
                 for subject in subjects:
                     if subject.area_id == area.id and subject.name == p2121_spo_data['name']:
                         current_subject = subject
 
                 if current_subject is None:
                     current_subject = Subject(code=p2121_spo_data['code'], name=p2121_spo_data['name'])
-                    area.subjects.append(current_subject)
-
+                    subjects.append(current_subject)
                 current_p2121_spo = P2121_SPO()
                 current_p2121_spo.str_number = p2121_spo_data['str_number']
 
                 current_subject.P2121_SPO.append(current_p2121_spo)
-
+                area.subjects.append(current_subject)
             for p2124_spo_data in area_data["p2124"]:
-
+                current_subject = None
+                print(p2124_spo_data['name'])
                 for subject in subjects:
                     if subject.area_id == area.id and subject.name == p2124_spo_data['name']:
                         current_subject = subject
-
                 if current_subject is None:
                     current_subject = Subject(code="", name=p2124_spo_data['name'])
-                    area.subjects.append(current_subject)
+                    subjects.append(current_subject)
 
                 current_p2124_spo = P2124_SPO()
                 current_p2124_spo.total_accepted = p2124_spo_data['total_accepted']
@@ -253,16 +257,16 @@ def new_year_spo():
                 current_p2124_spo.women_amount = p2124_spo_data['women_amount']
                 current_p2124_spo.targeted_education = p2124_spo_data['targeted_education']
                 current_subject.P2124_SPO.append(current_p2124_spo)
-
+                area.subjects.append(current_subject)
             for p2141_spo_data in area_data["p2141"]:
-
+                current_subject = None
+                print(p2141_spo_data['name'])
                 for subject in subjects:
                     if subject.area_id == area.id and subject.name == p2141_spo_data['name']:
                         current_subject = subject
-
                 if current_subject is None:
                     current_subject = Subject(code=p2141_spo_data['code'], name=p2141_spo_data['name'])
-                    area.subjects.append(current_subject)
+                    subjects.append(current_subject)
 
                 current_p2141_spo = P2141_SPO()
                 current_p2141_spo.str_number = p2141_spo_data['str_number']
@@ -276,16 +280,17 @@ def new_year_spo():
                 current_p2141_spo.legal_entity_amount = p2141_spo_data['legal_entity_amount']
 
                 current_subject.P2141_SPO.append(current_p2141_spo)
-
+                area.subjects.append(current_subject)
             for p2142_spo_data in area_data["p2142"]:
+                current_subject = None
+                print(p2142_spo_data['name'])
 
                 for subject in subjects:
                     if subject.area_id == area.id and subject.name == p2142_spo_data['name']:
                         current_subject = subject
-
                 if current_subject is None:
                     current_subject = Subject(code=p2142_spo_data['code'], name=p2142_spo_data['name'])
-                    area.subjects.append(current_subject)
+                    subjects.append(current_subject)
 
                 current_p2142_spo = P2142_SPO()
                 current_p2142_spo.str_number = p2142_spo_data['str_number']
@@ -299,8 +304,11 @@ def new_year_spo():
                 current_p2142_spo.excepted_disabled_children = p2142_spo_data['excepted_disabled_children']
 
                 current_subject.P2142_SPO.append(current_p2142_spo)
-
+                area.subjects.append(current_subject)
+            session.add(area)
         session.commit()
+
+    return "ok"
 
 
 @app.route('/api/year/spo_upload', methods=['POST', 'GET'])
