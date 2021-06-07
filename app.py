@@ -16,7 +16,7 @@ class MyFlaskApp(Flask):
     def run(self, host=None, port=None, debug=None, load_dotenv=True, **options):
         if not self.debug or os.getenv('WERKZEUG_RUN_MAIN') == 'true':
             with self.app_context():
-                new_year_spo()
+                read_json_old_spo()
         super(MyFlaskApp, self).run(host=host, port=port, debug=debug, load_dotenv=load_dotenv, **options)
 
 
@@ -357,6 +357,15 @@ def read_json_old_spo():
 
             current_subject = None
 
+            country_codes = [country.code for country in session.query(Country).all()]
+            for el in area_data["p27"]:
+                country_code = el['country_code']
+                if country_code not in country_codes:
+                    session.add(Country(name=el['name'].upper(), code=country_code))
+                    country_codes.append(country_code)
+
+            session.commit()
+
             for p211_spo_data in area_data["p211"]:
 
                 for subject in subjects:
@@ -365,7 +374,6 @@ def read_json_old_spo():
 
                 if current_subject is None:
                     current_subject = Subject(code=p211_spo_data['code'], name=p211_spo_data['name'])
-                    area.subjects.append(current_subject)
 
                 current_old_p211_spo = OldP211_SPO()
                 current_old_p211_spo.str_number = p211_spo_data['str_number']
@@ -387,7 +395,6 @@ def read_json_old_spo():
 
                 if current_subject is None:
                     current_subject = Subject(code=p212_spo_data['code'], name=p212_spo_data['name'])
-                    area.subjects.append(current_subject)
 
                 current_p212_spo = OldP212_SPO()
                 current_p212_spo.str_number = p212_spo_data['str_number']
@@ -414,7 +421,6 @@ def read_json_old_spo():
 
                 if current_subject is None:
                     current_subject = Subject(code="", name=p2122_spo_data['name'])
-                    area.subjects.append(current_subject)
 
                 current_p2122_spo = OldP2122_SPO()
                 current_p2122_spo.basic_graduated = p2122_spo_data['basic_graduated']
@@ -426,13 +432,15 @@ def read_json_old_spo():
 
             for p27_spo_data in area_data["p27"]:
 
-                code = p27_spo_data['country_code']
-                for c in countries:
-                    if c.code == code:
-                        p27_spo_data.country_id = c.id
-
                 current_p27_spo = OldP27_SPO()
+                code = p27_spo_data["country_code"]
+                for с in countries:
+                    if с.code == code:
+                        current_p27_spo.country_id = с.id
+                        break
+
                 current_p27_spo.str_number = p27_spo_data['str_number']
+                current_p27_spo.country_code = p27_spo_data['country_code']
                 current_p27_spo.total_accepted = p27_spo_data['total_accepted']
                 current_p27_spo.fed_budget_accepted = p27_spo_data['fed_budget_accepted']
                 current_p27_spo.subject_budget_accepted = p27_spo_data['subject_budget_accepted']
@@ -447,6 +455,9 @@ def read_json_old_spo():
                 current_p27_spo.full_refund_graduated = p27_spo_data['full_refund_graduated']
 
                 area.old_P27_SPO.append(current_p27_spo)
+
+            area.subjects.append(current_subject)
+            session.add(area)
 
         session.commit()
     print("success!")

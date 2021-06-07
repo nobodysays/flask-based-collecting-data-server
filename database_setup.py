@@ -238,6 +238,13 @@ class OldP2122_SPO(Base):
     subject = relationship("Subject", backref="old_P2122_SPO", uselist=True)
 
 
+class Country(Base):
+    __tablename__ = 'country'
+    id = Column(Integer, primary_key=True)
+    code = Column(Integer, nullable=True)
+    name = Column(String(500), nullable=True)
+
+
 class OldP27_SPO(Base):
     __tablename__ = 'old_spo_p27'
 
@@ -290,13 +297,6 @@ class P213(Base):
     women_amount = Column(Integer, nullable=True)
 
     subject = relationship("Subject", backref="P213", uselist=False)
-
-
-class Country(Base):
-    __tablename__ = 'country'
-    id = Column(Integer, primary_key=True)
-    code = Column(Integer, nullable=True)
-    name = Column(String(500), nullable=True)
 
 
 class PostgraduateBachelor(Base):
